@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaptopConfigController;
 use App\Http\Controllers\RescheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,10 @@ Route::middleware('auth:employee')->group(function () {
     Route::get('/buchen/{timeSlot}', [BookingController::class, 'create'])->name('booking.create');
     Route::post('/buchen/{timeSlot}', [BookingController::class, 'store'])->name('booking.store');
     Route::get('/termin/{booking}', [BookingController::class, 'show'])->name('booking.show');
+
+    // Laptop-/Software-Angaben (Phase 5)
+    Route::get('/termin/{booking}/konfiguration', [LaptopConfigController::class, 'edit'])->name('config.edit');
+    Route::post('/termin/{booking}/konfiguration', [LaptopConfigController::class, 'update'])->name('config.update');
 
     // Termin verschieben (Phase 4)
     Route::get('/verschieben', [RescheduleController::class, 'edit'])->name('reschedule.edit');

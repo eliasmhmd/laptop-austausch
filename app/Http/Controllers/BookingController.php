@@ -110,7 +110,7 @@ class BookingController extends Controller
     {
         abort_unless($booking->employee_id === $request->user('employee')->id, 403);
 
-        $booking->load('timeSlot', 'employee');
+        $booking->load('timeSlot', 'employee', 'laptopConfig', 'software.softwareCatalog');
 
         return view('booking.show', ['booking' => $booking]);
     }

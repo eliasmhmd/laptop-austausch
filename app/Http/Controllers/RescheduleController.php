@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\BuildsSlotCalendar;
 use App\Models\Booking;
+use App\Models\BookingSoftware;
+use App\Models\LaptopConfig;
 use App\Models\TimeSlot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -117,6 +119,10 @@ class RescheduleController extends Controller
             }
 
             $newSlot->save();
+
+            // Bereits erfasste Software-/Geräteangaben an die neue Buchung übertragen.
+            LaptopConfig::where('booking_id', $current->id)->update(['booking_id' => $booking->id]);
+            BookingSoftware::where('booking_id', $current->id)->update(['booking_id' => $booking->id]);
 
             return $booking;
         });

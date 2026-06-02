@@ -34,6 +34,35 @@
                 </div>
             </dl>
 
+            @if ($booking->isActive())
+                <div class="mt-6 rounded-lg border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-semibold text-slate-900">Software für das neue Gerät</h2>
+                        <a href="{{ route('config.edit', $booking) }}" class="text-sm font-medium text-blue-600 hover:underline">
+                            {{ $booking->laptopConfig || $booking->software->isNotEmpty() ? 'Bearbeiten' : 'Jetzt erfassen' }}
+                        </a>
+                    </div>
+
+                    @if ($booking->software->isNotEmpty())
+                        <ul class="mt-3 flex flex-wrap gap-2">
+                            @foreach ($booking->software as $sw)
+                                <li class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+                                    {{ $sw->is_custom ? $sw->custom_software_name : $sw->softwareCatalog?->name }}
+                                    @if ($sw->is_custom)<span class="text-slate-400">· Spezial</span>@endif
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if ($booking->laptopConfig?->old_manufacturer)
+                            <p class="mt-3 text-xs text-slate-500">Hersteller: {{ $booking->laptopConfig->old_manufacturer }}</p>
+                        @endif
+                    @else
+                        <p class="mt-2 text-sm text-slate-500">
+                            Noch keine Angaben. Bitte erfassen Sie, welche Software auf Ihrem Laptop installiert ist.
+                        </p>
+                    @endif
+                </div>
+            @endif
+
             <div class="mt-6 flex flex-col gap-2 sm:flex-row">
                 <a href="{{ route('dashboard') }}"
                     class="flex-1 rounded-md bg-slate-100 px-4 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-200">
