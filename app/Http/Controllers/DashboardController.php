@@ -13,8 +13,11 @@ class DashboardController extends Controller
      */
     public function index(Request $request): View
     {
+        $employee = $request->user('employee');
+
         return view('dashboard', [
-            'employee' => $request->user('employee'),
+            'employee' => $employee,
+            'activeBooking' => $employee->activeBookings()->with('timeSlot')->first(),
         ]);
     }
 }
