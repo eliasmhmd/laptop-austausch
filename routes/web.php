@@ -25,6 +25,7 @@ Route::middleware('auth:employee')->group(function () {
     Route::get('/buchen/{timeSlot}', [BookingController::class, 'create'])->name('booking.create');
     Route::post('/buchen/{timeSlot}', [BookingController::class, 'store'])->name('booking.store');
     Route::get('/termin/{booking}', [BookingController::class, 'show'])->name('booking.show');
+    Route::get('/termin/{booking}/ical', [BookingController::class, 'ical'])->name('booking.ical');
 
     // Laptop-/Software-Angaben (Phase 5)
     Route::get('/termin/{booking}/konfiguration', [LaptopConfigController::class, 'edit'])->name('config.edit');

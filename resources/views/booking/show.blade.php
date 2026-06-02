@@ -73,8 +73,11 @@
                         class="flex-1 rounded-md bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
                         Termin verschieben
                     </a>
+                    <a href="{{ route('booking.ical', $booking) }}"
+                        class="flex-1 rounded-md bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                        Zum Kalender hinzufügen
+                    </a>
                 @endif
-                {{-- Der iCal-Download ("Zum Kalender hinzufügen") folgt in Phase 6. --}}
             </div>
         </div>
     </div>

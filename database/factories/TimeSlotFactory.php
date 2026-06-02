@@ -17,8 +17,12 @@ class TimeSlotFactory extends Factory
 {
     public function definition(): array
     {
-        $date = Carbon::parse($this->faker->dateTimeBetween('2026-08-10', '2026-09-11'));
-        $hour = $this->faker->numberBetween(8, 15);
+        // Eindeutige Kombination aus Werktag + Stunde aus dem 200er-Raster
+        // (25 Werktage x 8 Stunden-Slots) – passend zur UNIQUE-Regel
+        // (slot_date, start_time), damit mehrere Fenster nicht kollidieren.
+        $index = $this->faker->unique()->numberBetween(0, 199);
+        $date = Carbon::parse('2026-08-10')->addWeekdays(intdiv($index, 8));
+        $hour = 8 + ($index % 8);
 
         return [
             'slot_date' => $date->format('Y-m-d'),

@@ -8,6 +8,8 @@ use App\Models\TimeSlot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -113,6 +115,58 @@ class BookingController extends Controller
         $booking->load('timeSlot', 'employee', 'laptopConfig', 'software.softwareCatalog');
 
         return view('booking.show', ['booking' => $booking]);
+    }
+
+    /**
+     * iCal-Datei (.ics) zum Download – kein E-Mail-Versand, nur Browser-Download.
+     * Zeiten werden nach UTC konvertiert, damit Outlook & Co. sie korrekt in der
+     * lokalen Zeitzone (Europe/Berlin) anzeigen.
+     */
+    public function ical(Request $request, Booking $booking): Response
+    {
+        abort_unless($booking->employee_id === $request->user('employee')->id, 403);
+
+        $booking->load('timeSlot', 'employee');
+        $slot = $booking->timeSlot;
+        $date = $slot->slot_date->format('Y-m-d');
+
+        $start = Carbon::parse("{$date} {$slot->start_time}", 'Europe/Berlin')->utc();
+        $end = Carbon::parse("{$date} {$slot->end_time}", 'Europe/Berlin')->utc();
+        $fmt = fn (Carbon $d): string => $d->format('Ymd\THis\Z');
+
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Kreis Groß-Gerau//Laptop-Austausch//DE',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'BEGIN:VEVENT',
+            'UID:booking-'.$booking->id.'@laptop-austausch.kreisgg.de',
+            'DTSTAMP:'.$fmt(now()->utc()),
+            'DTSTART:'.$fmt($start),
+            'DTEND:'.$fmt($end),
+            'SUMMARY:'.$this->icalEscape('Laptop-Austausch'),
+            'DESCRIPTION:'.$this->icalEscape('Austausch Ihres Laptops bei der IT-Abteilung. PC-Nummer: '.$booking->employee->pc_nummer),
+            'LOCATION:'.$this->icalEscape('IT-Abteilung, Kreis Groß-Gerau'),
+            'STATUS:CONFIRMED',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ];
+
+        $content = implode("\r\n", $lines)."\r\n";
+
+        return response($content, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="laptop-austausch-termin.ics"',
+        ]);
+    }
+
+    /**
+     * Sonderzeichen für iCal-Textfelder maskieren (RFC 5545).
+     */
+    private function icalEscape(string $text): string
+    {
+        return str_replace(['\\', ',', ';', "\n"], ['\\\\', '\\,', '\\;', '\\n'], $text);
     }
 
     /**
