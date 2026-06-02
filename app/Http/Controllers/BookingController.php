@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuildsSlotCalendar;
 use App\Models\Booking;
 use App\Models\TimeSlot;
 use Illuminate\Http\JsonResponse;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class BookingController extends Controller
 {
+    use BuildsSlotCalendar;
+
     /**
      * Kalenderansicht: alle Zeitfenster nach Kalenderwoche und Tag gruppiert.
      * Optionaler Filter ?kw=NN. Pro Mitarbeiter:in ist nur ein aktiver Termin
@@ -25,27 +28,7 @@ class BookingController extends Controller
             return redirect()->route('booking.show', $active);
         }
 
-        $selectedKw = $request->integer('kw') ?: null;
-
-        $slots = TimeSlot::query()
-            ->when($selectedKw, fn ($q) => $q->where('calendar_week', $selectedKw))
-            ->orderBy('slot_date')
-            ->orderBy('start_time')
-            ->get();
-
-        $calendar = $slots->groupBy([
-            'calendar_week',
-            fn (TimeSlot $slot): string => $slot->slot_date->format('Y-m-d'),
-        ]);
-
-        $weeks = TimeSlot::query()->distinct()->orderBy('calendar_week')->pluck('calendar_week');
-
-        return view('booking.calendar', [
-            'calendar' => $calendar,
-            'weeks' => $weeks,
-            'selectedKw' => $selectedKw,
-            'availableIds' => $slots->filter->isAvailable()->pluck('id')->values(),
-        ]);
+        return view('booking.calendar', $this->slotCalendar($request->integer('kw') ?: null));
     }
 
     /**

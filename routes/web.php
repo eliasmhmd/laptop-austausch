@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RescheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -23,6 +24,11 @@ Route::middleware('auth:employee')->group(function () {
     Route::get('/buchen/{timeSlot}', [BookingController::class, 'create'])->name('booking.create');
     Route::post('/buchen/{timeSlot}', [BookingController::class, 'store'])->name('booking.store');
     Route::get('/termin/{booking}', [BookingController::class, 'show'])->name('booking.show');
+
+    // Termin verschieben (Phase 4)
+    Route::get('/verschieben', [RescheduleController::class, 'edit'])->name('reschedule.edit');
+    Route::get('/verschieben/{timeSlot}', [RescheduleController::class, 'confirm'])->name('reschedule.confirm');
+    Route::post('/verschieben/{timeSlot}', [RescheduleController::class, 'update'])->name('reschedule.update');
 
     // Live-Verfügbarkeit (Alpine.js)
     Route::get('/api/verfuegbarkeit', [BookingController::class, 'availability'])->name('booking.availability');

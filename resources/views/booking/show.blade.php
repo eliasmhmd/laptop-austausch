@@ -39,11 +39,13 @@
                     class="flex-1 rounded-md bg-slate-100 px-4 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-200">
                     Zum Dashboard
                 </a>
-                {{-- "Termin verschieben" wird in Phase 4, der iCal-Download in Phase 6 ergänzt. --}}
-                <button type="button" disabled
-                    class="flex-1 cursor-not-allowed rounded-md bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-400">
-                    Zum Kalender hinzufügen (folgt)
-                </button>
+                @if ($booking->isActive())
+                    <a href="{{ route('reschedule.edit') }}"
+                        class="flex-1 rounded-md bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                        Termin verschieben
+                    </a>
+                @endif
+                {{-- Der iCal-Download ("Zum Kalender hinzufügen") folgt in Phase 6. --}}
             </div>
         </div>
     </div>

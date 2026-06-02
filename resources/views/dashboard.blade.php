@@ -30,11 +30,10 @@
                     class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
                     Termin ansehen
                 </a>
-                {{-- Wird in Phase 4 aktiviert. --}}
-                <button type="button" disabled
-                    class="cursor-not-allowed rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400">
-                    Termin verschieben (folgt)
-                </button>
+                <a href="{{ route('reschedule.edit') }}"
+                    class="rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                    Termin verschieben
+                </a>
             </div>
         </div>
     @else
