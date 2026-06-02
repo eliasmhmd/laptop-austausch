@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\AdminUser;
+use App\Models\Employee;
 use App\Models\User;
 
 return [
@@ -42,6 +44,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Mitarbeitende (öffentliches Buchungsportal): Login per KVGG-Nummer + PC-Nummer.
+        'employee' => [
+            'driver' => 'session',
+            'provider' => 'employees',
+        ],
+
+        // IT-Verwaltung (Admin-Panel, ab Phase 7 mit Filament).
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
     ],
 
     /*
@@ -67,10 +81,15 @@ return [
             'model' => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'employees' => [
+            'driver' => 'eloquent',
+            'model' => Employee::class,
+        ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => AdminUser::class,
+        ],
     ],
 
     /*
