@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Laptop-Austausch') &middot; Kreis Groß-Gerau</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>[x-cloak]{display:none !important;}</style>
 </head>
 <body class="h-full bg-slate-100 text-slate-800 antialiased">
     <div class="min-h-full flex flex-col">

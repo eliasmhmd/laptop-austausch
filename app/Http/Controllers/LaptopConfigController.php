@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\BookingSoftware;
 use App\Models\LaptopConfig;
 use App\Models\SoftwareCatalog;
+use App\Services\SoftwareCatalogResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,14 +34,28 @@ class LaptopConfigController extends Controller
             return redirect()->route('booking.show', $booking);
         }
 
-        $booking->load('laptopConfig', 'software');
+        $booking->load('laptopConfig', 'software.softwareCatalog');
+
+        // Vorschläge: Zusatzsoftware aus dem Katalog (Standardsoftware ist ohnehin
+        // auf jedem Gerät und muss nicht angefordert werden).
+        $suggestions = SoftwareCatalog::query()
+            ->where('is_standard', false)
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        // Bereits erfasste Software dieser Buchung als Namen (Katalog + Altdaten).
+        $selectedNames = $booking->software
+            ->map(fn (BookingSoftware $sw): ?string => $sw->softwareCatalog?->name ?: $sw->custom_software_name)
+            ->filter()
+            ->unique()
+            ->values();
 
         return view('config.edit', [
             'booking' => $booking,
             'manufacturers' => self::MANUFACTURERS,
-            'catalog' => SoftwareCatalog::orderBy('name')->get(),
-            'selectedCatalogIds' => $booking->software->whereNotNull('software_catalog_id')->pluck('software_catalog_id')->all(),
-            'customSoftware' => $booking->software->where('is_custom', true)->pluck('custom_software_name')->implode("\n"),
+            'suggestions' => $suggestions,
+            'selectedNames' => $selectedNames,
         ]);
     }
 
@@ -55,18 +70,14 @@ class LaptopConfigController extends Controller
 
         $validated = $request->validate([
             'manufacturer' => ['nullable', Rule::in(self::MANUFACTURERS)],
-            'software' => ['array'],
-            'software.*' => ['integer', Rule::exists('software_catalog', 'id')],
-            'custom_software' => ['nullable', 'string', 'max:2000'],
+            'software_names' => ['array', 'max:100'],
+            'software_names.*' => ['string', 'max:255'],
         ]);
 
-        $customNames = collect(preg_split('/\r\n|\r|\n/', $validated['custom_software'] ?? ''))
-            ->map(fn (string $line): string => trim($line))
-            ->filter()
-            ->unique()
-            ->values();
+        $resolver = app(SoftwareCatalogResolver::class);
+        $names = $resolver->normalizeNames($validated['software_names'] ?? []);
 
-        DB::transaction(function () use ($booking, $request, $validated, $customNames): void {
+        DB::transaction(function () use ($booking, $request, $validated, $names, $resolver): void {
             LaptopConfig::updateOrCreate(
                 ['booking_id' => $booking->id],
                 [
@@ -76,22 +87,18 @@ class LaptopConfigController extends Controller
                 ],
             );
 
-            // Softwareauswahl komplett neu setzen (vermeidet Duplikate).
+            // Softwareauswahl komplett neu setzen (vermeidet Duplikate). Jeder Name
+            // wird auf einen Katalogeintrag abgebildet; unbekannte Namen werden als
+            // Zusatzsoftware neu angelegt (selbstpflegender Katalog).
             BookingSoftware::where('booking_id', $booking->id)->delete();
 
-            foreach ($validated['software'] ?? [] as $catalogId) {
-                BookingSoftware::create([
-                    'booking_id' => $booking->id,
-                    'software_catalog_id' => $catalogId,
-                    'is_custom' => false,
-                ]);
-            }
+            foreach ($names as $name) {
+                $catalog = $resolver->resolve($name);
 
-            foreach ($customNames as $name) {
                 BookingSoftware::create([
                     'booking_id' => $booking->id,
-                    'custom_software_name' => $name,
-                    'is_custom' => true,
+                    'software_catalog_id' => $catalog->id,
+                    'is_custom' => false,
                 ]);
             }
         });

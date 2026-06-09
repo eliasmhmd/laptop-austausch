@@ -31,7 +31,7 @@ class LaptopConfigTest extends TestCase
         $this->actingAs($employee, 'employee')
             ->get(route('config.edit', $booking))
             ->assertOk()
-            ->assertSee('Installierte Software');
+            ->assertSee('Benötigte Software');
     }
 
     public function test_non_owner_cannot_open_the_config_form(): void
@@ -43,18 +43,17 @@ class LaptopConfigTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_saving_config_stores_manufacturer_software_and_custom(): void
+    public function test_saving_config_links_known_software_and_creates_new_entries(): void
     {
         $employee = Employee::factory()->create(['pc_nummer' => 'PC7438']);
         $booking = $this->bookingFor($employee);
-        $office = SoftwareCatalog::factory()->create(['name' => 'Microsoft Office']);
-        $teams = SoftwareCatalog::factory()->create(['name' => 'Microsoft Teams']);
+        SoftwareCatalog::factory()->create(['name' => 'Microsoft Office']);
+        SoftwareCatalog::factory()->create(['name' => 'Microsoft Teams']);
 
         $this->actingAs($employee, 'employee')
             ->post(route('config.update', $booking), [
                 'manufacturer' => 'Lenovo',
-                'software' => [$office->id, $teams->id],
-                'custom_software' => "Fachverfahren XY\nSpezialtool Z",
+                'software_names' => ['Microsoft Office', 'Microsoft Teams', 'Fachverfahren XY'],
             ])
             ->assertRedirect(route('booking.show', $booking));
 
@@ -63,12 +62,33 @@ class LaptopConfigTest extends TestCase
         // PC-Nummer wird automatisch aus dem Mitarbeiterdatensatz übernommen.
         $this->assertSame('PC7438', $config->old_pc_nummer);
 
-        $this->assertSame(2, BookingSoftware::where('booking_id', $booking->id)->where('is_custom', false)->count());
-        $this->assertSame(2, BookingSoftware::where('booking_id', $booking->id)->where('is_custom', true)->count());
+        // Alle drei werden als Katalog-Verknüpfung gespeichert (keine is_custom-Zeilen mehr).
+        $this->assertSame(3, BookingSoftware::where('booking_id', $booking->id)->count());
+        $this->assertSame(0, BookingSoftware::where('booking_id', $booking->id)->where('is_custom', true)->count());
+
+        // Der unbekannte Name wird selbsttätig als Zusatzsoftware angelegt.
+        $this->assertDatabaseHas('software_catalog', [
+            'name' => 'Fachverfahren XY',
+            'is_standard' => false,
+        ]);
+    }
+
+    public function test_existing_software_name_is_reused_case_insensitively(): void
+    {
+        $employee = Employee::factory()->create();
+        $booking = $this->bookingFor($employee);
+        $office = SoftwareCatalog::factory()->create(['name' => 'Microsoft Office']);
+
+        $this->actingAs($employee, 'employee')
+            ->post(route('config.update', $booking), ['software_names' => ['microsoft office']]);
+
+        // Kein neuer Katalogeintrag, sondern Verknüpfung auf den bestehenden;
+        // die ursprüngliche Schreibweise bleibt erhalten.
+        $this->assertSame(1, SoftwareCatalog::count());
+        $this->assertSame('Microsoft Office', $office->fresh()->name);
         $this->assertDatabaseHas('booking_software', [
             'booking_id' => $booking->id,
-            'custom_software_name' => 'Fachverfahren XY',
-            'is_custom' => true,
+            'software_catalog_id' => $office->id,
         ]);
     }
 
@@ -76,27 +96,17 @@ class LaptopConfigTest extends TestCase
     {
         $employee = Employee::factory()->create();
         $booking = $this->bookingFor($employee);
-        $a = SoftwareCatalog::factory()->create();
-        $b = SoftwareCatalog::factory()->create();
+        $a = SoftwareCatalog::factory()->create(['name' => 'Programm A']);
+        SoftwareCatalog::factory()->create(['name' => 'Programm B']);
 
         $this->actingAs($employee, 'employee')
-            ->post(route('config.update', $booking), ['software' => [$a->id, $b->id], 'custom_software' => 'Tool A']);
+            ->post(route('config.update', $booking), ['software_names' => ['Programm A', 'Programm B']]);
 
         $this->actingAs($employee, 'employee')
-            ->post(route('config.update', $booking), ['software' => [$a->id], 'custom_software' => '']);
+            ->post(route('config.update', $booking), ['software_names' => ['Programm A']]);
 
         $this->assertSame(1, BookingSoftware::where('booking_id', $booking->id)->count());
         $this->assertDatabaseHas('booking_software', ['booking_id' => $booking->id, 'software_catalog_id' => $a->id]);
-    }
-
-    public function test_rejects_software_id_outside_catalog(): void
-    {
-        $employee = Employee::factory()->create();
-        $booking = $this->bookingFor($employee);
-
-        $this->actingAs($employee, 'employee')
-            ->post(route('config.update', $booking), ['software' => [999999]])
-            ->assertSessionHasErrors('software.0');
     }
 
     public function test_config_and_software_move_to_new_booking_on_reschedule(): void
@@ -108,14 +118,13 @@ class LaptopConfigTest extends TestCase
             'time_slot_id' => $oldSlot->id,
             'status' => 'confirmed',
         ]);
-        $software = SoftwareCatalog::factory()->create();
+        SoftwareCatalog::factory()->create(['name' => 'Programm A']);
 
         // Software/Hersteller für die alte Buchung erfassen.
         $this->actingAs($employee, 'employee')
             ->post(route('config.update', $oldBooking), [
                 'manufacturer' => 'Dell',
-                'software' => [$software->id],
-                'custom_software' => 'Spezialtool',
+                'software_names' => ['Programm A', 'Spezialtool'],
             ]);
 
         // Auf ein neues Fenster verschieben.
