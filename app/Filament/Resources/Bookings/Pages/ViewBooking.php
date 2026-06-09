@@ -4,12 +4,15 @@ namespace App\Filament\Resources\Bookings\Pages;
 
 use App\Filament\Resources\Bookings\BookingResource;
 use App\Models\Booking;
+use App\Services\BookingManager;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 class ViewBooking extends ViewRecord
 {
@@ -53,6 +56,60 @@ class ViewBooking extends ViewRecord
                         ->title('Status auf „bestätigt“ zurückgesetzt.')
                         ->success()
                         ->send();
+                }),
+
+            Action::make('moveBooking')
+                ->label('Termin verschieben')
+                ->icon(Heroicon::OutlinedArrowsRightLeft)
+                ->color('primary')
+                ->visible(fn (): bool => $this->canManage()
+                    && $this->getRecord()->status !== 'cancelled')
+                ->schema([
+                    Select::make('time_slot_id')
+                        ->label('Neues Zeitfenster')
+                        ->options(fn (): array => BookingResource::availableSlotOptions($this->getRecord()->time_slot_id))
+                        ->searchable()
+                        ->required()
+                        ->helperText('Es werden nur aktuell freie Zeitfenster angezeigt.'),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        app(BookingManager::class)->move($this->getRecord(), (int) $data['time_slot_id']);
+                    } catch (RuntimeException $e) {
+                        Notification::make()->title($e->getMessage())->danger()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->title('Termin wurde verschoben.')->success()->send();
+                }),
+
+            Action::make('cancelBooking')
+                ->label('Buchung stornieren')
+                ->icon(Heroicon::OutlinedTrash)
+                ->color('danger')
+                ->visible(fn (): bool => $this->canManage()
+                    && $this->getRecord()->status !== 'cancelled')
+                ->schema([
+                    Textarea::make('cancellation_reason')
+                        ->label('Stornogrund')
+                        ->placeholder('Optionaler Hinweis, z. B. „Gerät bereits getauscht“.')
+                        ->rows(3)
+                        ->maxLength(1000),
+                ])
+                ->modalHeading('Buchung stornieren')
+                ->modalDescription('Das Zeitfenster wird wieder freigegeben.')
+                ->modalSubmitActionLabel('Stornieren')
+                ->action(function (array $data): void {
+                    try {
+                        app(BookingManager::class)->cancel($this->getRecord(), $data['cancellation_reason'] ?: null);
+                    } catch (RuntimeException $e) {
+                        Notification::make()->title($e->getMessage())->danger()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->title('Buchung wurde storniert.')->success()->send();
                 }),
         ];
     }
