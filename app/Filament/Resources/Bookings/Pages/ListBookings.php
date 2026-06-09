@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings\Pages;
 
+use App\Exports\BookingsExport;
 use App\Filament\Resources\Bookings\BookingResource;
 use App\Services\BookingManager;
 use App\Services\ImagingSheetExporter;
@@ -13,7 +14,9 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ListBookings extends ListRecords
 {
@@ -78,6 +81,20 @@ class ListBookings extends ListRecords
                     }
 
                     return redirect()->route('admin.exports.imaging.day', ['date' => $data['date']]);
+                }),
+
+            Action::make('exportExcel')
+                ->label('Als Excel exportieren')
+                ->icon(Heroicon::OutlinedTableCells)
+                ->color('gray')
+                ->action(function (): BinaryFileResponse {
+                    // Exportiert exakt die aktuell gefilterte/sortierte Liste.
+                    $query = $this->getFilteredSortedTableQuery();
+
+                    return Excel::download(
+                        new BookingsExport($query),
+                        'buchungen-'.now()->format('Y-m-d').'.xlsx',
+                    );
                 }),
         ];
     }
