@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ImagingSheetController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
@@ -8,6 +9,13 @@ use App\Http\Controllers\RescheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
+
+// Admin-PDF-Export (Imaging-Blätter). Eigene Anmelde-Prüfung im Controller,
+// damit Gäste zur Admin-Anmeldung (nicht zur Mitarbeiter-Anmeldung) gelangen.
+Route::prefix('admin/exports/imaging')->name('admin.exports.imaging.')->group(function () {
+    Route::get('/booking/{booking}', [ImagingSheetController::class, 'single'])->name('single');
+    Route::get('/day', [ImagingSheetController::class, 'day'])->name('day');
+});
 
 // Öffentlicher Bereich für Mitarbeitende (nur für nicht angemeldete Nutzer).
 Route::middleware('guest:employee')->group(function () {

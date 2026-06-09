@@ -21,6 +21,13 @@ class ViewBooking extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('imagingPdf')
+                ->label('Imaging-Blatt (PDF)')
+                ->icon(Heroicon::OutlinedPrinter)
+                ->color('gray')
+                ->url(fn (): string => route('admin.exports.imaging.single', $this->getRecord()))
+                ->openUrlInNewTab(),
+
             $this->markStatusAction(
                 name: 'markNoShow',
                 label: 'Als „nicht erschienen“ markieren',

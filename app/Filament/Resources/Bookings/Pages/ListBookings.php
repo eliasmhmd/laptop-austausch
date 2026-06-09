@@ -4,11 +4,14 @@ namespace App\Filament\Resources\Bookings\Pages;
 
 use App\Filament\Resources\Bookings\BookingResource;
 use App\Services\BookingManager;
+use App\Services\ImagingSheetExporter;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
@@ -49,6 +52,32 @@ class ListBookings extends ListRecords
                     }
 
                     Notification::make()->title('Buchung wurde angelegt.')->success()->send();
+                }),
+
+            Action::make('imagingDayPdf')
+                ->label('Imaging-Blätter (Tag)')
+                ->icon(Heroicon::OutlinedPrinter)
+                ->color('gray')
+                ->schema([
+                    DatePicker::make('date')
+                        ->label('Tag')
+                        ->required()
+                        ->default('2026-08-10')
+                        ->helperText('Ein Blatt je Termin dieses Tages (ohne Stornierungen).'),
+                ])
+                ->action(function (array $data): ?RedirectResponse {
+                    $count = app(ImagingSheetExporter::class)->bookingsForDate($data['date'])->count();
+
+                    if ($count === 0) {
+                        Notification::make()
+                            ->title('Für diesen Tag gibt es keine Buchungen.')
+                            ->warning()
+                            ->send();
+
+                        return null;
+                    }
+
+                    return redirect()->route('admin.exports.imaging.day', ['date' => $data['date']]);
                 }),
         ];
     }
