@@ -10,7 +10,9 @@ use App\Models\LaptopConfig;
 use App\Models\SoftwareCatalog;
 use App\Models\TimeSlot;
 use App\Services\ImagingSheetExporter;
+use App\Filament\Resources\Bookings\Pages\ListBookings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ImagingSheetTest extends TestCase
@@ -134,5 +136,27 @@ class ImagingSheetTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.exports.imaging.day', ['date' => '2026-09-30']))
             ->assertNotFound();
+    }
+
+    public function test_day_action_redirects_to_the_download_route(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $slot = TimeSlot::factory()->create(['slot_date' => '2026-08-10', 'start_time' => '09:00:00']);
+        Booking::factory()->create(['time_slot_id' => $slot->id, 'status' => 'confirmed']);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListBookings::class)
+            ->callAction('imagingDayPdf', data: ['date' => '2026-08-10'])
+            ->assertRedirect(route('admin.exports.imaging.day', ['date' => '2026-08-10']));
+    }
+
+    public function test_day_action_warns_when_no_bookings(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListBookings::class)
+            ->callAction('imagingDayPdf', data: ['date' => '2026-08-10'])
+            ->assertNoRedirect();
     }
 }

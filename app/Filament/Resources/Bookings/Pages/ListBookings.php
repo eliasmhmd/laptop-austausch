@@ -12,7 +12,6 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
@@ -68,7 +67,7 @@ class ListBookings extends ListRecords
                         ->default('2026-08-10')
                         ->helperText('Ein Blatt je Termin dieses Tages (ohne Stornierungen).'),
                 ])
-                ->action(function (array $data): ?RedirectResponse {
+                ->action(function (array $data) {
                     $count = app(ImagingSheetExporter::class)->bookingsForDate($data['date'])->count();
 
                     if ($count === 0) {
