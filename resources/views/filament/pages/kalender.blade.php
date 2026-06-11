@@ -1,4 +1,19 @@
 <x-filament-panels::page>
+    {{-- Hilfsklassen mit Hell-/Dunkelmodus-Varianten (Inline-Styles können kein
+         dark: – Filament setzt die Klasse .dark auf <html>). --}}
+    <style>
+        .kal-head  { color:#374151; }
+        .kal-sub   { color:#6b7280; }
+        .kal-time  { color:#6b7280; }
+        .kal-muted { color:#6b7280; }
+        .kal-empty { background:#f9fafb; }
+        .dark .kal-head  { color:#e5e7eb; }
+        .dark .kal-sub   { color:#9ca3af; }
+        .dark .kal-time  { color:#9ca3af; }
+        .dark .kal-muted { color:#9ca3af; }
+        .dark .kal-empty { background:#1f2937; }
+    </style>
+
     @php
         $statusLabels = \App\Filament\Resources\Bookings\Tables\BookingsTable::STATUS_LABELS;
 
@@ -28,14 +43,11 @@
                     wire:click="$set('kw', {{ $prevKw ?? 'null' }})"
                 >KW {{ $prevKw ?? $currentKw }}</x-filament::button>
 
-                <select
-                    wire:model.live="kw"
-                    style="border:1px solid #d1d5db;border-radius:.5rem;padding:.35rem .6rem;background:#fff;"
-                >
+                <x-filament::input.select wire:model.live="kw">
                     @foreach ($weeks as $week)
                         <option value="{{ $week }}">KW {{ $week }}</option>
                     @endforeach
-                </select>
+                </x-filament::input.select>
 
                 <x-filament::button
                     size="sm" color="gray" icon="heroicon-m-chevron-right" icon-position="after"
@@ -46,7 +58,7 @@
         </x-slot>
 
         @if ($days->isEmpty())
-            <p style="color:#6b7280;text-align:center;padding:2rem 0;">
+            <p class="kal-muted" style="text-align:center;padding:2rem 0;">
                 Für diese Kalenderwoche gibt es noch keine Zeitfenster.
             </p>
         @else
@@ -56,9 +68,9 @@
                         <tr>
                             <th style="width:64px;"></th>
                             @foreach ($days as $day)
-                                <th style="text-align:center;font-weight:600;color:#374151;padding:.25rem;">
+                                <th class="kal-head" style="text-align:center;font-weight:600;padding:.25rem;">
                                     {{ $day->translatedFormat('D') }}<br>
-                                    <span style="font-weight:400;color:#6b7280;">{{ $day->format('d.m.') }}</span>
+                                    <span class="kal-sub" style="font-weight:400;">{{ $day->format('d.m.') }}</span>
                                 </th>
                             @endforeach
                         </tr>
@@ -66,7 +78,7 @@
                     <tbody>
                         @foreach ($times as $time)
                             <tr>
-                                <td style="font-weight:600;color:#6b7280;white-space:nowrap;padding-right:.25rem;">
+                                <td class="kal-time" style="font-weight:600;white-space:nowrap;padding-right:.25rem;">
                                     {{ $time }}
                                 </td>
 
@@ -79,7 +91,7 @@
                                     <td style="height:56px;text-align:center;vertical-align:middle;border-radius:.5rem;padding:0;">
                                         @if (! $slot)
                                             {{-- Kein Zeitfenster an diesem Tag/Uhrzeit --}}
-                                            <div style="height:100%;background:#f9fafb;border-radius:.5rem;"></div>
+                                            <div class="kal-empty" style="height:100%;border-radius:.5rem;"></div>
                                         @elseif ($booking)
                                             {{-- Belegt: Name + Status, verlinkt auf die Buchungsdetails --}}
                                             <a
@@ -111,7 +123,7 @@
             </div>
 
             {{-- Legende --}}
-            <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem;font-size:.8rem;color:#374151;">
+            <div class="kal-muted" style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem;font-size:.8rem;">
                 <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#dcfce7;"></span> frei</span>
                 <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#dbeafe;"></span> bestätigt</span>
                 <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#fee2e2;"></span> nicht erschienen</span>
