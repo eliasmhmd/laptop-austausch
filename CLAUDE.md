@@ -16,8 +16,9 @@ change; surface design decisions and spec mismatches rather than guessing.
 
 ## Current state (as of 2026-06-11)
 
-**Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) essentially done.
-Only deployment (Phase 9) and two optional importers remain. ~107 feature tests pass.
+**Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
+Deployment (Phase 9) has an automated install kit ready but hasn't been run on the real
+server yet. **132 feature tests pass.**
 
 | Phase | Status | What shipped |
 |-------|--------|--------------|
@@ -28,17 +29,21 @@ Only deployment (Phase 9) and two optional importers remain. ~107 feature tests 
 | 5 — Laptop config form | ✅ | Manufacturer + software-for-reimaging (see decision below) |
 | 6 — iCal download | ✅ | `.ics` download, owner-only |
 | 7 — Admin panel (Filament v4) | ✅ | All resources, slot generator, CSV import, admin accounts, no-show/sick, manual booking mgmt, PDF + Excel export, software catalog |
-| 8 — Polish & testing | ✅ (mostly) | German error pages (404/403/419/500/503/429), fresh-seed flow verified |
-| 9 — Deployment | ⬜ | Not started |
+| 8 — Polish & testing | ✅ | German error pages (404/403/419/500/503/429), fresh-seed flow verified |
+| 9 — Deployment | 🟡 | Automated kit ready (`deploy/setup.sh` + `DEPLOY.md`); not yet run on the real server |
 
 **Beyond the original spec, also built:**
 - **Admin-Kalender as the panel home** — replaces the default Filament dashboard *and* the
   daily-load chart *and* the TimeSlots resource. A week grid (KW switcher) shows each slot
   as frei/belegt; clicking a free slot opens a create-booking dialog, clicking a booked slot
   opens the booking. "Slots generieren" lives here as a header action.
-- **Software-Katalog**: admin-managed catalog + employee-form autocomplete that self-heals
-  (unknown entries are auto-added as non-standard). Catalog rows are clickable → a "Verwendet
-  von" list of who requested that software.
+- **Software-Katalog with approval workflow**: admin-managed catalog + employee-form
+  autocomplete. Unknown entries an employee types are saved as **`pending`** (visible only to
+  that employee + admins); admins **approve** (→ visible to all), **delete** (reject), or
+  **merge** duplicates ("excel"+"Excel" → one, repointing all bookings). Catalog rows are
+  clickable → a "Verwendet von" list of who requested that software.
+- **Datensicherung (database backups)**: admin-only page to create SQL dumps, list/download/
+  delete them, and restore from an uploaded `.sql`; auto-backup before migrations in production.
 - **Zusätzliche Angaben**: optional free-text field on the laptop form, surfaced on the
   booking confirmation, the admin infolist, and the printed imaging sheet.
 
@@ -57,9 +62,12 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **MariaDB** locally (matches MySQL in production). App DB `laptop_austausch`, app user
   `laptop_app`. `root` uses socket auth (needs sudo).
 - **Excel**: `maatwebsite/excel`. **PDF**: `barryvdh/laravel-dompdf`.
-- Production server: **Linux + Apache + MySQL**. Needs system extensions **`php-intl`** AND
-  **`php-gd`** (Filament needs intl; Excel/image writing needs gd). Run `npm run build` after
-  every deploy/pull.
+- Production server: **Linux + Apache + MariaDB**. Needs PHP extensions **`php-intl`** AND
+  **`php-gd`** (Filament needs intl; Excel/image writing needs gd), plus the **`mariadb-client`**
+  package (`mysqldump`/`mysql` in PATH — for the backup/restore system). Run `npm run build`
+  after every deploy/pull. **Production `.env` must set `SESSION_DRIVER=file`** (there is no
+  sessions table — the default `database` driver would break login) **and `APP_LOCALE=de`**
+  (default is `en`).
 
 ### Two auth guards (`config/auth.php`)
 - `employee` — public side. Login = `kvgg_nummer` (username, case-insensitive) +
@@ -93,18 +101,32 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   for umlauts, order-independent header mapping, upsert on `kvgg_nummer`, per-row error collection.
 - **`ImagingSheetExporter`** — builds the printable "Imaging-Blatt" PDF (the checklist the
   technician lays next to the new laptop). `sheetData()` is separately testable.
-- **`SoftwareCatalogResolver`** — case-insensitive `firstOrCreate` for software names
-  (self-healing catalog); `normalizeNames()` trims/dedupes.
+- **`SoftwareCatalogResolver`** — `resolve($name, $employeeId)`: reuses an **approved** entry
+  (case-insensitive) → else the submitter's **own pending** entry → else creates a new
+  `pending` entry attributed to that employee. `normalizeNames()` trims/dedupes.
+- **`SoftwareCatalogMerger`** — `merge($loser, $winner)`: repoints all `booking_software` from
+  loser → winner (dedupes when a booking has both), then deletes the loser. Used by the merge action.
+- **`DatabaseBackupService`** — SQL backups via `mysqldump` to
+  `storage/app/backups/backup_YYYY-MM-DD_HH-MM-SS.sql` (gitignored; contain personal data).
+  Password passed via `MYSQL_PWD` env (not the command line); filenames pattern-validated
+  against path traversal. `create/all/path/exists/delete/restore`. Chosen over
+  `spatie/laravel-backup` (which makes zips and has no restore).
 
-### Filament resources (`app/Filament/`) — v4 splits each resource into `*Resource.php` + `Tables/` + `Schemas/` + `Pages/`
+### Filament resources & pages (`app/Filament/`) — v4 splits each resource into `*Resource.php` + `Tables/` + `Schemas/` + `Pages/`
 - **`Pages/Kalender.php`** — the panel home (`getRoutePath()` returns `/`). Week grid; create-booking
   dialog on free slots; "Slots generieren" header action. View: `resources/views/filament/pages/kalender.blade.php`.
+- **`Pages/SystemBackups.php`** ("Datensicherung") — **admin-only** (`canAccess()` → isAdmin).
+  Header actions: create backup + restore (FileUpload `.sql`, extension-checked, destructive
+  modal). Blade table of backups (name/date/size) with download + delete (`wire:confirm`).
 - **Bookings** — read-only list + detail infolist. Detail page has admin actions: mark
   no-show / sick (with reason), reset to confirmed, move, cancel, print imaging PDF.
 - **Employees** — read-only list + detail; "Mitarbeitende importieren" header action (CSV upload).
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
-- **SoftwareCatalogs** — CRUD (viewer read-only); View page with "Verwendet von" relation
-  manager (`UsageRelationManager`) listing who requested each software.
+- **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
+  Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
+  column/filter and admin-only **Freigeben** (approve) and **Zusammenführen** (merge) actions.
+  View page has a "Verwendet von" relation manager (`UsageRelationManager`) listing who
+  requested each software.
 
 ### Read-only-for-viewers pattern
 `canCreate/canEdit/canDelete/canDeleteAny` → `isAdmin()`; full-resource block via
@@ -117,6 +139,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **Excel**: `BookingsExport` (FromQuery + WithHeadings + WithMapping). The ListBookings
   export action passes `$this->getFilteredSortedTableQuery()`, so the export matches exactly
   the filtered/sorted on-screen list.
+- **Backup download**: `admin/backups/{filename}/download` — plain controller route
+  (`BackupController`), admin-checked (mirrors the imaging-PDF pattern).
 
 ---
 
@@ -124,7 +148,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 
 Migrations in `database/migrations/` (created in this order):
 `admin_users`, `employees`, `time_slots`, `bookings`, `software_catalog`, `booking_software`,
-`laptop_configs`, plus `add_additional_notes_to_laptop_configs_table`.
+`laptop_configs`, then `add_additional_notes_to_laptop_configs_table` and
+`add_status_and_submitted_by_to_software_catalog_table`.
 
 - **admin_users**: id, name, email (unique), password (hashed), role (enum: admin, viewer), timestamps
 - **employees**: id, kvgg_nummer (unique, login username), vorname, nachname, email, abteilung,
@@ -133,7 +158,9 @@ Migrations in `database/migrations/` (created in this order):
   booked, blocked), capacity (default 1), booked_count (default 0), created_by (FK admin_users), timestamps
 - **bookings**: id, employee_id (FK), time_slot_id (FK, unique), status (enum: confirmed,
   cancelled, completed, no_show, sick), cancellation_reason, unplanned_note, booked_at, timestamps
-- **software_catalog**: id, name, version, publisher, is_standard (bool, default true), timestamps
+- **software_catalog**: id, name, version, publisher, is_standard (bool, default true),
+  status (enum: pending, approved — default `approved`, so existing rows stay visible),
+  submitted_by (nullable FK employees, nullOnDelete — who suggested a pending entry), timestamps
 - **booking_software**: id, booking_id (FK), software_catalog_id (nullable FK),
   custom_software_name (nullable), is_custom (bool, default false), timestamps
 - **laptop_configs**: id, booking_id (FK, unique), old_* hardware fields, new_* fields,
@@ -144,15 +171,29 @@ Note: new employee-form submissions link software via the resolver and no longer
 
 ---
 
+## Backups
+
+- `storage/app/backups/*.sql` — already gitignored (`storage/app/.gitignore` ignores `*`).
+  Backups contain employee data and must **never** reach Git.
+- Created from the **Datensicherung** admin page (admin-only) or automatically: an
+  `AppServiceProvider` listener on `MigrationsStarted` runs a backup **only when
+  `APP_ENV=production`**, and logs a warning (never blocks) if it fails.
+- `deploy/update.sh` runs `php artisan migrate`, so production updates auto-backup first.
+
+---
+
 ## Testing
 
 - PHP here has **no `pdo_sqlite`** (only `pdo_mysql`), so tests run against **MariaDB**, not
   SQLite. `phpunit.xml` points at a separate DB **`laptop_austausch_test`** (user `laptop_app`).
   This must NEVER point at the dev DB `laptop_austausch`. Creating it / granting needs sudo.
-- Run: `php artisan test`. Rebuild assets after view/CSS/JS edits: `npm run build`.
+- Run: `php artisan test` (132 tests). Rebuild assets after view/CSS/JS edits: `npm run build`.
 - **Gotcha:** a single test that does `actingAs(admin)->get` THEN `actingAs(viewer)->get`
   fails — Filament's `AuthenticateSession` invalidates the session on a mid-test user switch
   (302). Split into one test per user.
+- **Gotcha:** the restore test can't run inside a transaction (restore does DROP/CREATE via a
+  separate `mysql` process), so `DatabaseRestoreTest` uses the `DatabaseMigrations` trait
+  instead of `RefreshDatabase`.
 
 ---
 
@@ -170,6 +211,12 @@ Note: new employee-form submissions link software via the resolver and no longer
   by the base `Page`.
 - MariaDB's default collation is case-insensitive, so `where('name', 'lowercase')` still
   matches — don't assert case-sensitivity in software-name tests.
+- **No closure route handlers** — `php artisan route:cache` (run during deploy) aborts on any
+  `Route::get('/', fn () => ...)`. The home route uses `Route::redirect('/', '/dashboard')`
+  for this reason. Route *groups* with a closure are fine; only route *handlers* break it.
+- `<x-filament::input.select>` is `w-full` by default — add an inline `style="width:auto"` to
+  keep it inline (e.g. the KW switcher). Inline styles in a Filament page Blade can't do dark
+  mode; use a `<style>` block with `.dark` selectors (Filament toggles `.dark` on `<html>`).
 
 ---
 
@@ -199,14 +246,27 @@ finalizing those importers.
 
 ---
 
-## Remaining work
+## Deployment (Phase 9)
 
-- **Phase 9 — Deployment**: Apache config for Laravel, `git pull`, `composer install --no-dev`,
-  production `.env`, install `php-intl` + `php-gd` AND the **`mariadb-client`** package
-  (`mysqldump` + `mysql` must be in PATH — required by the backup/restore system and the
-  auto-backup-before-migrate hook), `php artisan migrate`, `npm run build`, import real
-  employee CSV, generate real slots, final test.
-- **Optional**: SCCM hardware CSV importer → `laptop_configs` old_* fields. Deeper
-  responsive/mobile review of the calendar.
+Automated. On a fresh Debian server (Apache + MariaDB): get the code there, then
+`sudo bash deploy/setup.sh` from the project root. The script installs PHP 8.3 (Sury repo)
++ extensions, Composer, Node 20, Apache + MariaDB, creates the DB/user, writes a production
+`.env` (with `SESSION_DRIVER=file`, `APP_LOCALE=de`), runs `composer install --no-dev`,
+`npm run build`, `migrate`, seeds the standard software catalog, creates a real admin login,
+sets permissions, builds caches, and configures the Apache vhost.
 
-See `SETUP.md` for fresh-machine setup (Windows + WSL2).
+- `deploy/setup.sh` — one-shot first install. `deploy/update.sh` — later updates
+  (`git pull` → build → `migrate` (auto-backs-up in prod) → caches).
+- `deploy/.env.production.example`, `deploy/apache-vhost.conf` — templates the script fills in.
+- `DEPLOY.md` — German step-by-step guide (code transfer, running it, post-install steps,
+  troubleshooting). **The scripts have not yet been run on the real server.**
+- After install, the data steps are done in the admin panel: import the employee CSV,
+  generate slots, review the standard software catalog.
+
+## Remaining / optional work
+
+- Run `deploy/setup.sh` on the real server and verify (Phase 9).
+- **Optional**: SCCM hardware CSV importer → `laptop_configs` old_* fields (need sample rows).
+- **Open**: confirm the real employee export is `.csv` vs `.xlsx` (the importer reads CSV text).
+
+See also `SETUP.md` for the local dev machine setup (Windows + WSL2).
