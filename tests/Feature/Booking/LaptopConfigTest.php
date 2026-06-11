@@ -54,6 +54,7 @@ class LaptopConfigTest extends TestCase
             ->post(route('config.update', $booking), [
                 'manufacturer' => 'Lenovo',
                 'software_names' => ['Microsoft Office', 'Microsoft Teams', 'Fachverfahren XY'],
+                'additional_notes' => 'Zweiter Monitor wird benötigt.',
             ])
             ->assertRedirect(route('booking.show', $booking));
 
@@ -61,6 +62,7 @@ class LaptopConfigTest extends TestCase
         $this->assertSame('Lenovo', $config->old_manufacturer);
         // PC-Nummer wird automatisch aus dem Mitarbeiterdatensatz übernommen.
         $this->assertSame('PC7438', $config->old_pc_nummer);
+        $this->assertSame('Zweiter Monitor wird benötigt.', $config->additional_notes);
 
         // Alle drei werden als Katalog-Verknüpfung gespeichert (keine is_custom-Zeilen mehr).
         $this->assertSame(3, BookingSoftware::where('booking_id', $booking->id)->count());

@@ -108,6 +108,7 @@ class ImagingSheetExporter
             'old_pc' => $booking->laptopConfig?->old_pc_nummer ?: ($employee?->pc_nummer ?? '—'),
             'standard' => $standard,
             'requested' => $requested,
+            'notes' => $booking->laptopConfig?->additional_notes,
         ];
     }
 

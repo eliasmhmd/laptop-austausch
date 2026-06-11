@@ -126,6 +126,22 @@
                 </template>
             </div>
 
+            {{-- Zusätzliche Angaben (Freitext) --}}
+            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <label for="additional_notes" class="block text-lg font-semibold text-slate-900">
+                    Zusätzliche Angaben (optional)
+                </label>
+                <p class="mt-1 text-sm text-slate-500">
+                    Sonstige Hinweise für die IT, z. B. besondere Einstellungen, Peripherie oder Anmerkungen zum Gerät.
+                </p>
+                <textarea id="additional_notes" name="additional_notes" rows="4" maxlength="2000"
+                    class="mt-3 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    placeholder="z. B. zweiter Monitor wird benötigt, Dockingstation vorhanden …">{{ old('additional_notes', $booking->laptopConfig?->additional_notes) }}</textarea>
+                @error('additional_notes')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="flex gap-3">
                 <a href="{{ route('booking.show', $booking) }}"
                     class="flex-1 rounded-md bg-slate-100 px-4 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-200">

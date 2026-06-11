@@ -69,6 +69,10 @@ class BookingInfolist
                                 ->filter()
                                 ->implode(', '))
                             ->placeholder('Keine Angaben'),
+                        TextEntry::make('laptopConfig.additional_notes')
+                            ->label('Zusätzliche Angaben')
+                            ->columnSpanFull()
+                            ->placeholder('—'),
                     ]),
             ]);
     }

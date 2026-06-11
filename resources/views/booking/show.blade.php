@@ -60,6 +60,11 @@
                             Noch keine Angaben. Bitte erfassen Sie, welche Software auf Ihrem Laptop installiert ist.
                         </p>
                     @endif
+
+                    @if ($booking->laptopConfig?->additional_notes)
+                        <p class="mt-3 text-xs font-medium text-slate-500">Zusätzliche Angaben:</p>
+                        <p class="text-xs whitespace-pre-line text-slate-600">{{ $booking->laptopConfig->additional_notes }}</p>
+                    @endif
                 </div>
             @endif
 

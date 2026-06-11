@@ -72,6 +72,7 @@ class LaptopConfigController extends Controller
             'manufacturer' => ['nullable', Rule::in(self::MANUFACTURERS)],
             'software_names' => ['array', 'max:100'],
             'software_names.*' => ['string', 'max:255'],
+            'additional_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $resolver = app(SoftwareCatalogResolver::class);
@@ -84,6 +85,7 @@ class LaptopConfigController extends Controller
                     // Alte PC-Nummer automatisch aus dem Mitarbeiterdatensatz.
                     'old_pc_nummer' => $request->user('employee')->pc_nummer,
                     'old_manufacturer' => $validated['manufacturer'] ?? null,
+                    'additional_notes' => $validated['additional_notes'] ?? null,
                 ],
             );
 

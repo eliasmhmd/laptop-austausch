@@ -24,6 +24,7 @@ class LaptopConfig extends Model
         'old_storage_type',
         'old_operating_system',
         'old_inventory_number',
+        'additional_notes',
         'new_pc_nummer',
         'new_serial_number',
         'new_inventory_number',

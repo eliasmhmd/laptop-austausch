@@ -85,6 +85,11 @@
                 <li class="empty">Keine zusätzliche Software angefordert.</li>
             @endforelse
         </ul>
+
+        @if (! empty($sheet['notes']))
+            <h2>Zusätzliche Angaben</h2>
+            <p style="white-space: pre-line; margin: 0;">{{ $sheet['notes'] }}</p>
+        @endif
     </div>
 @endforeach
 </body>
