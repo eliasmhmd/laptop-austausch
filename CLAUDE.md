@@ -202,8 +202,10 @@ finalizing those importers.
 ## Remaining work
 
 - **Phase 9 — Deployment**: Apache config for Laravel, `git pull`, `composer install --no-dev`,
-  production `.env`, `php artisan migrate`, install `php-intl` + `php-gd`, `npm run build`,
-  import real employee CSV, generate real slots, final test.
+  production `.env`, install `php-intl` + `php-gd` AND the **`mariadb-client`** package
+  (`mysqldump` + `mysql` must be in PATH — required by the backup/restore system and the
+  auto-backup-before-migrate hook), `php artisan migrate`, `npm run build`, import real
+  employee CSV, generate real slots, final test.
 - **Optional**: SCCM hardware CSV importer → `laptop_configs` old_* fields. Deeper
   responsive/mobile review of the calendar.
 
