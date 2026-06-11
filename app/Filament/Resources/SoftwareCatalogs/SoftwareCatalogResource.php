@@ -57,6 +57,18 @@ class SoftwareCatalogResource extends Resource
         ];
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        $pending = SoftwareCatalog::query()->pending()->count();
+
+        return $pending > 0 ? (string) $pending : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
     public static function getPages(): array
     {
         return [

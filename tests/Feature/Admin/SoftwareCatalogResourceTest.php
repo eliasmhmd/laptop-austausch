@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Filament\Resources\SoftwareCatalogs\Pages\CreateSoftwareCatalog;
 use App\Filament\Resources\SoftwareCatalogs\Pages\EditSoftwareCatalog;
+use App\Filament\Resources\SoftwareCatalogs\Pages\ListSoftwareCatalogs;
 use App\Filament\Resources\SoftwareCatalogs\Pages\ViewSoftwareCatalog;
 use App\Filament\Resources\SoftwareCatalogs\RelationManagers\UsageRelationManager;
 use App\Models\AdminUser;
@@ -133,5 +134,47 @@ class SoftwareCatalogResourceTest extends TestCase
             ->assertCanSeeTableRecords($software->bookingSoftware)
             ->assertSee('Zillgens')
             ->assertDontSee('Aaltonen');
+    }
+
+    public function test_admin_can_approve_a_pending_entry(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $pending = SoftwareCatalog::factory()->pending()->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->callTableAction('approve', $pending);
+
+        $this->assertSame(SoftwareCatalog::STATUS_APPROVED, $pending->fresh()->status);
+    }
+
+    public function test_viewer_cannot_see_the_approve_action(): void
+    {
+        $viewer = AdminUser::factory()->create(['role' => 'viewer']);
+        $pending = SoftwareCatalog::factory()->pending()->create();
+
+        Livewire::actingAs($viewer, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->assertTableActionHidden('approve', $pending);
+    }
+
+    public function test_admin_can_merge_two_entries_via_the_table_action(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $winner = SoftwareCatalog::factory()->create(['name' => 'Excel']);
+        $loser = SoftwareCatalog::factory()->pending()->create(['name' => 'excel']);
+
+        $booking = Booking::factory()->create();
+        BookingSoftware::create(['booking_id' => $booking->id, 'software_catalog_id' => $loser->id, 'is_custom' => false]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->callTableAction('merge', $loser, data: ['target_id' => $winner->id]);
+
+        $this->assertDatabaseMissing('software_catalog', ['id' => $loser->id]);
+        $this->assertDatabaseHas('booking_software', [
+            'booking_id' => $booking->id,
+            'software_catalog_id' => $winner->id,
+        ]);
     }
 }

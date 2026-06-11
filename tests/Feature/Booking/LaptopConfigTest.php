@@ -43,6 +43,23 @@ class LaptopConfigTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_suggestions_hide_other_users_pending_software(): void
+    {
+        $employee = Employee::factory()->create();
+        $booking = $this->bookingFor($employee);
+
+        SoftwareCatalog::factory()->create(['name' => 'FreigegebenTool', 'is_standard' => false]);
+        SoftwareCatalog::factory()->pending()->create(['name' => 'EigenTool', 'submitted_by' => $employee->id]);
+        SoftwareCatalog::factory()->pending()->create(['name' => 'FremdTool', 'submitted_by' => Employee::factory()->create()->id]);
+
+        $this->actingAs($employee, 'employee')
+            ->get(route('config.edit', $booking))
+            ->assertOk()
+            ->assertSee('FreigegebenTool')   // freigegeben → für alle sichtbar
+            ->assertSee('EigenTool')          // eigener pending-Eintrag → sichtbar
+            ->assertDontSee('FremdTool');     // fremder pending-Eintrag → verborgen
+    }
+
     public function test_saving_config_links_known_software_and_creates_new_entries(): void
     {
         $employee = Employee::factory()->create(['pc_nummer' => 'PC7438']);

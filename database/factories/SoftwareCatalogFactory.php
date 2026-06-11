@@ -17,6 +17,19 @@ class SoftwareCatalogFactory extends Factory
             'version' => (string) $this->faker->numberBetween(1, 20).'.'.$this->faker->numberBetween(0, 9),
             'publisher' => $this->faker->company(),
             'is_standard' => $this->faker->boolean(70),
+            'status' => SoftwareCatalog::STATUS_APPROVED,
+            'submitted_by' => null,
         ];
+    }
+
+    /**
+     * Von einer/einem Mitarbeitenden eingereicht, noch nicht freigegeben.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (): array => [
+            'is_standard' => false,
+            'status' => SoftwareCatalog::STATUS_PENDING,
+        ]);
     }
 }

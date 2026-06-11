@@ -36,10 +36,16 @@ class LaptopConfigController extends Controller
 
         $booking->load('laptopConfig', 'software.softwareCatalog');
 
-        // Vorschläge: Zusatzsoftware aus dem Katalog (Standardsoftware ist ohnehin
-        // auf jedem Gerät und muss nicht angefordert werden).
+        // Vorschläge: freigegebene Zusatzsoftware (Standardsoftware ist ohnehin auf
+        // jedem Gerät) PLUS die eigenen, noch nicht freigegebenen Einträge. Fremde
+        // „pending"-Einträge bleiben verborgen.
+        $employeeId = $request->user('employee')->id;
         $suggestions = SoftwareCatalog::query()
             ->where('is_standard', false)
+            ->where(function ($query) use ($employeeId): void {
+                $query->approved()
+                    ->orWhere(fn ($q) => $q->pending()->where('submitted_by', $employeeId));
+            })
             ->orderBy('name')
             ->pluck('name')
             ->values();
@@ -77,8 +83,9 @@ class LaptopConfigController extends Controller
 
         $resolver = app(SoftwareCatalogResolver::class);
         $names = $resolver->normalizeNames($validated['software_names'] ?? []);
+        $employeeId = $request->user('employee')->id;
 
-        DB::transaction(function () use ($booking, $request, $validated, $names, $resolver): void {
+        DB::transaction(function () use ($booking, $request, $validated, $names, $resolver, $employeeId): void {
             LaptopConfig::updateOrCreate(
                 ['booking_id' => $booking->id],
                 [
@@ -95,7 +102,7 @@ class LaptopConfigController extends Controller
             BookingSoftware::where('booking_id', $booking->id)->delete();
 
             foreach ($names as $name) {
-                $catalog = $resolver->resolve($name);
+                $catalog = $resolver->resolve($name, $employeeId);
 
                 BookingSoftware::create([
                     'booking_id' => $booking->id,

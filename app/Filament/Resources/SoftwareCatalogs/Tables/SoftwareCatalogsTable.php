@@ -2,13 +2,21 @@
 
 namespace App\Filament\Resources\SoftwareCatalogs\Tables;
 
+use App\Models\SoftwareCatalog;
+use App\Services\SoftwareCatalogMerger;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class SoftwareCatalogsTable
 {
@@ -21,6 +29,18 @@ class SoftwareCatalogsTable
                     ->label('Name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === SoftwareCatalog::STATUS_PENDING ? 'Wartet auf Freigabe' : 'Freigegeben')
+                    ->color(fn (string $state): string => $state === SoftwareCatalog::STATUS_PENDING ? 'warning' : 'success')
+                    ->sortable(),
+                TextColumn::make('submittedBy.full_name')
+                    ->label('Eingereicht von')
+                    ->state(fn (SoftwareCatalog $record): string => $record->submittedBy
+                        ? trim($record->submittedBy->vorname.' '.$record->submittedBy->nachname)
+                        : '—')
+                    ->toggleable(),
                 TextColumn::make('version')
                     ->label('Version')
                     ->placeholder('—')
@@ -42,6 +62,12 @@ class SoftwareCatalogsTable
                     ->suffix(' ×'),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        SoftwareCatalog::STATUS_PENDING => 'Wartet auf Freigabe',
+                        SoftwareCatalog::STATUS_APPROVED => 'Freigegeben',
+                    ]),
                 TernaryFilter::make('is_standard')
                     ->label('Standardsoftware')
                     ->placeholder('Alle')
@@ -49,10 +75,60 @@ class SoftwareCatalogsTable
                     ->falseLabel('Nur Zusatzsoftware'),
             ])
             ->recordActions([
+                Action::make('approve')
+                    ->label('Freigeben')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->visible(fn (SoftwareCatalog $record): bool => $record->isPending() && self::userIsAdmin())
+                    ->requiresConfirmation()
+                    ->modalHeading('Software freigeben')
+                    ->modalDescription('Nach der Freigabe ist die Software für alle Mitarbeitenden auswählbar.')
+                    ->action(function (SoftwareCatalog $record): void {
+                        $record->update(['status' => SoftwareCatalog::STATUS_APPROVED]);
+
+                        Notification::make()
+                            ->title('Software freigegeben.')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('merge')
+                    ->label('Zusammenführen')
+                    ->icon(Heroicon::OutlinedArrowsPointingIn)
+                    ->color('warning')
+                    ->visible(fn (): bool => self::userIsAdmin())
+                    ->modalHeading('Einträge zusammenführen')
+                    ->modalSubmitActionLabel('Zusammenführen')
+                    ->schema([
+                        Select::make('target_id')
+                            ->label('Beibehalten (Ziel-Eintrag)')
+                            ->helperText('Der aktuelle Eintrag wird gelöscht; alle zugehörigen Buchungen werden auf den gewählten Ziel-Eintrag umgehängt.')
+                            ->required()
+                            ->searchable()
+                            ->options(fn (SoftwareCatalog $record): array => SoftwareCatalog::query()
+                                ->whereKeyNot($record->getKey())
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all()),
+                    ])
+                    ->action(function (SoftwareCatalog $record, array $data): void {
+                        $winner = SoftwareCatalog::findOrFail($data['target_id']);
+                        app(SoftwareCatalogMerger::class)->merge($record, $winner);
+
+                        Notification::make()
+                            ->title('Einträge zusammengeführt.')
+                            ->body($record->name.' wurde in '.$winner->name.' überführt.')
+                            ->success()
+                            ->send();
+                    }),
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([]);
+    }
+
+    private static function userIsAdmin(): bool
+    {
+        return Auth::guard('admin')->user()?->isAdmin() ?? false;
     }
 }

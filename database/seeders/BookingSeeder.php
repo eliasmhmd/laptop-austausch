@@ -69,5 +69,35 @@ class BookingSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->seedPendingSoftware($slots);
+    }
+
+    /**
+     * Ein paar von Mitarbeitenden eingereichte, noch nicht freigegebene Einträge –
+     * damit der Freigabe-Workflow im Admin-Panel etwas zum Prüfen hat.
+     *
+     * @param  \Illuminate\Support\Collection<int, TimeSlot>  $slots
+     */
+    private function seedPendingSoftware($slots): void
+    {
+        $names = ['Greenshot', 'IrfanView', 'KeePass', 'FileZilla'];
+
+        $bookings = Booking::with('employee')->inRandomOrder()->limit(count($names))->get();
+
+        foreach ($bookings as $i => $booking) {
+            $software = SoftwareCatalog::create([
+                'name' => $names[$i],
+                'is_standard' => false,
+                'status' => SoftwareCatalog::STATUS_PENDING,
+                'submitted_by' => $booking->employee_id,
+            ]);
+
+            BookingSoftware::create([
+                'booking_id' => $booking->id,
+                'software_catalog_id' => $software->id,
+                'is_custom' => false,
+            ]);
+        }
     }
 }
