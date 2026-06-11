@@ -5,7 +5,10 @@ namespace App\Filament\Resources\SoftwareCatalogs;
 use App\Filament\Resources\SoftwareCatalogs\Pages\CreateSoftwareCatalog;
 use App\Filament\Resources\SoftwareCatalogs\Pages\EditSoftwareCatalog;
 use App\Filament\Resources\SoftwareCatalogs\Pages\ListSoftwareCatalogs;
+use App\Filament\Resources\SoftwareCatalogs\Pages\ViewSoftwareCatalog;
+use App\Filament\Resources\SoftwareCatalogs\RelationManagers\UsageRelationManager;
 use App\Filament\Resources\SoftwareCatalogs\Schemas\SoftwareCatalogForm;
+use App\Filament\Resources\SoftwareCatalogs\Schemas\SoftwareCatalogInfolist;
 use App\Filament\Resources\SoftwareCatalogs\Tables\SoftwareCatalogsTable;
 use App\Models\SoftwareCatalog;
 use BackedEnum;
@@ -37,6 +40,11 @@ class SoftwareCatalogResource extends Resource
         return SoftwareCatalogForm::configure($schema);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return SoftwareCatalogInfolist::configure($schema);
+    }
+
     public static function table(Table $table): Table
     {
         return SoftwareCatalogsTable::configure($table);
@@ -44,7 +52,9 @@ class SoftwareCatalogResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            UsageRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
@@ -52,6 +62,7 @@ class SoftwareCatalogResource extends Resource
         return [
             'index' => ListSoftwareCatalogs::route('/'),
             'create' => CreateSoftwareCatalog::route('/create'),
+            'view' => ViewSoftwareCatalog::route('/{record}'),
             'edit' => EditSoftwareCatalog::route('/{record}/edit'),
         ];
     }
