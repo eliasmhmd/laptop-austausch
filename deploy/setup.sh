@@ -84,26 +84,40 @@ a2enmod ${PHP} rewrite >/dev/null 2>&1 || true
 a2dismod php8.4 php8.2 php8.1 mpm_event >/dev/null 2>&1 || true
 a2enmod mpm_prefork >/dev/null 2>&1 || true
 
+# Sind die Abhängigkeiten und gebauten Assets bereits im Paket (USB-Stick)?
+# Dann brauchen wir auf dem Server WEDER Composer NOCH Node/npm und laden nichts
+# davon aus dem Internet. (Erzeugt mit deploy/bundle.sh auf dem Entwickler-Rechner.)
+HAVE_VENDOR=false; [ -f vendor/autoload.php ] && HAVE_VENDOR=true
+HAVE_BUILD=false;  [ -f public/build/manifest.json ] && HAVE_BUILD=true
+
 # ----------------------------------------------------------------------------
-# 3. Composer
+# 3. Composer (nur, wenn vendor/ NICHT mitgeliefert wurde)
 # ----------------------------------------------------------------------------
-step "Composer installieren"
-if ! command -v composer >/dev/null 2>&1; then
-  EXPECTED="$(curl -fsSL https://composer.github.io/installer.sig)"
-  curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
-  ACTUAL="$(${PHP} -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
-  [ "$EXPECTED" = "$ACTUAL" ] || die "Composer-Installer-Prüfsumme stimmt nicht."
-  ${PHP} /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-  rm -f /tmp/composer-setup.php
+if [ "$HAVE_VENDOR" = true ]; then
+  step "PHP-Abhängigkeiten bereits im Paket enthalten – Composer wird nicht benötigt"
+else
+  step "Composer installieren"
+  if ! command -v composer >/dev/null 2>&1; then
+    EXPECTED="$(curl -fsSL https://composer.github.io/installer.sig)"
+    curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
+    ACTUAL="$(${PHP} -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
+    [ "$EXPECTED" = "$ACTUAL" ] || die "Composer-Installer-Prüfsumme stimmt nicht."
+    ${PHP} /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    rm -f /tmp/composer-setup.php
+  fi
 fi
 
 # ----------------------------------------------------------------------------
-# 4. Node.js 20 (für den Asset-Build mit Vite)
+# 4. Node.js 20 (nur, wenn die Assets NICHT mitgeliefert wurden)
 # ----------------------------------------------------------------------------
-step "Node.js 20 installieren"
-if ! command -v node >/dev/null 2>&1; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs
+if [ "$HAVE_BUILD" = true ]; then
+  step "Frontend-Assets bereits im Paket enthalten – Node/npm wird nicht benötigt"
+else
+  step "Node.js 20 installieren"
+  if ! command -v node >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+  fi
 fi
 
 # ----------------------------------------------------------------------------
@@ -142,14 +156,22 @@ set_env DB_USERNAME "${DB_USER}"
 set_env DB_PASSWORD "${DB_PASS}"
 
 # ----------------------------------------------------------------------------
-# 7. Abhängigkeiten + Build
+# 7. Abhängigkeiten + Build (übersprungen, wenn schon im Paket)
 # ----------------------------------------------------------------------------
-step "PHP-Abhängigkeiten installieren (composer)"
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+if [ "$HAVE_VENDOR" = true ]; then
+  info "vendor/ aus dem Paket übernommen – kein composer install nötig."
+else
+  step "PHP-Abhängigkeiten installieren (composer)"
+  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+fi
 
-step "Frontend-Assets bauen (npm)"
-npm ci
-npm run build
+if [ "$HAVE_BUILD" = true ]; then
+  info "public/build/ aus dem Paket übernommen – kein npm-Build nötig."
+else
+  step "Frontend-Assets bauen (npm)"
+  npm ci
+  npm run build
+fi
 
 step "App-Key erzeugen"
 ${PHP} artisan key:generate --force

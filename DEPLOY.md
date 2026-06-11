@@ -54,6 +54,47 @@ Hast du kein `rsync`, geht auch `scp -r`.
 > **Wichtig:** Niemals die `.env`-Datei oder echte Mitarbeiterdaten mit hochladen
 > oder ins Git geben. Das Skript erzeugt auf dem Server eine eigene `.env`.
 
+### Variante C — per USB-Stick (kein Netzwerkzugang zum Server nötig)
+
+Ideal, wenn der Server nicht im selben Netz erreichbar ist. Hier wird **alles
+Aufwändige schon auf dem Laptop vorbereitet** (PHP-Bibliotheken herunterladen,
+Frontend bauen), sodass der Server dafür **kein Internet** und **kein
+Composer/Node/npm** braucht.
+
+1. Auf **deinem Laptop** (im Projektordner) das Paket erzeugen:
+
+   ```bash
+   bash deploy/bundle.sh
+   ```
+
+   Das erstellt die Datei `laptop-austausch-paket.tar.gz` (enthält den Code
+   **inklusive** `vendor/` und der fertig gebauten Assets, **ohne** `.env`).
+
+2. Diese eine Datei auf den USB-Stick kopieren.
+
+3. Am Server den Stick einstecken, die Datei z. B. nach `/var/www` kopieren und
+   auspacken:
+
+   ```bash
+   mkdir -p /var/www && cd /var/www
+   cp /media/usb/laptop-austausch-paket.tar.gz .   # Pfad ggf. anpassen
+   tar -xzf laptop-austausch-paket.tar.gz
+   ```
+
+   Der Code liegt danach in `/var/www/laptop-austausch`.
+
+> Der Server braucht dann nur noch Internet für die **Systempakete** (PHP, Apache,
+> MariaDB via `apt`). Ob er ins Internet kommt, prüfst du mit:
+>
+> ```bash
+> ping -c1 deb.debian.org
+> ```
+>
+> Klappt das, läuft `setup.sh` einfach durch. Hat der Server **gar kein**
+> Internet, müssen auch diese Systempakete vorab als `.deb`-Dateien auf einem
+> baugleichen Debian-Rechner besorgt werden (`apt-get install --download-only …`)
+> — das ist deutlich aufwändiger; in dem Fall vorab Bescheid geben.
+
 ---
 
 ## Schritt 2 — Installationsskript starten
