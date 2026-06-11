@@ -13,6 +13,7 @@
 /.vscode
 /.zed
 /auth.json
+/laptop-austausch-paket.tar.gz
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json
