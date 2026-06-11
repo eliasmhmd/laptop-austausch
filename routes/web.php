@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\ImagingSheetController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\BookingController;
@@ -16,6 +17,10 @@ Route::prefix('admin/exports/imaging')->name('admin.exports.imaging.')->group(fu
     Route::get('/booking/{booking}', [ImagingSheetController::class, 'single'])->name('single');
     Route::get('/day', [ImagingSheetController::class, 'day'])->name('day');
 });
+
+// Download von Datenbank-Sicherungen (nur Admin – Prüfung im Controller).
+Route::get('admin/backups/{filename}/download', [BackupController::class, 'download'])
+    ->name('admin.backups.download');
 
 // Öffentlicher Bereich für Mitarbeitende (nur für nicht angemeldete Nutzer).
 Route::middleware('guest:employee')->group(function () {
