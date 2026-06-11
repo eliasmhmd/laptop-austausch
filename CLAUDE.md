@@ -17,8 +17,8 @@ change; surface design decisions and spec mismatches rather than guessing.
 ## Current state (as of 2026-06-11)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) has an automated install kit ready but hasn't been run on the real
-server yet. **132 feature tests pass.**
+Deployment (Phase 9) has an automated install kit ready (online **and** offline/USB)
+but hasn't been run on the real server yet. **135 feature tests pass.**
 
 | Phase | Status | What shipped |
 |-------|--------|--------------|
@@ -30,7 +30,7 @@ server yet. **132 feature tests pass.**
 | 6 — iCal download | ✅ | `.ics` download, owner-only |
 | 7 — Admin panel (Filament v4) | ✅ | All resources, slot generator, CSV import, admin accounts, no-show/sick, manual booking mgmt, PDF + Excel export, software catalog |
 | 8 — Polish & testing | ✅ | German error pages (404/403/419/500/503/429), fresh-seed flow verified |
-| 9 — Deployment | 🟡 | Automated kit ready (`deploy/setup.sh` + `DEPLOY.md`); not yet run on the real server |
+| 9 — Deployment | 🟡 | Automated kit ready (`deploy/setup.sh` + `deploy/bundle.sh` USB/offline + `DEPLOY.md`); not yet run on the real server |
 
 **Beyond the original spec, also built:**
 - **Admin-Kalender as the panel home** — replaces the default Filament dashboard *and* the
@@ -95,6 +95,9 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **`BookingManager`** — admin-side create/cancel/move. Each runs in `DB::transaction` +
   `lockForUpdate`; throws `RuntimeException` (German message) on conflict, caught by the
   Filament action → danger Notification. Enforces slot-available + one-active-booking-per-employee.
+  Also `releaseSlotsForEmployees($ids|$employees)`: frees the time slots held by those
+  employees' non-cancelled bookings — called by the Employees bulk-delete **before** deleting,
+  because the FK cascade removes the bookings but does NOT reset the slot `booked_count`/`status`.
 - **`SlotGenerator`** — generates weekday slots (8/day: 08:00–15:00), idempotent
   (`firstOrCreate`), with a `HOLIDAYS` hook. Used by the seeder and the "Slots generieren" action.
 - **`EmployeeImporter`** — CSV import: auto-detects delimiter (`;`/`,`/tab), Windows-1252→UTF-8
@@ -121,6 +124,9 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **Bookings** — read-only list + detail infolist. Detail page has admin actions: mark
   no-show / sick (with reason), reset to confirmed, move, cancel, print imaging PDF.
 - **Employees** — read-only list + detail; "Mitarbeitende importieren" header action (CSV upload).
+  Admin-only **bulk-delete** toolbar action (select rows → "Löschen"): frees their booked slots
+  via `BookingManager::releaseSlotsForEmployees` first, then deletes (cascade removes bookings,
+  configs, software links). Hidden for viewers.
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
@@ -187,7 +193,7 @@ Note: new employee-form submissions link software via the resolver and no longer
 - PHP here has **no `pdo_sqlite`** (only `pdo_mysql`), so tests run against **MariaDB**, not
   SQLite. `phpunit.xml` points at a separate DB **`laptop_austausch_test`** (user `laptop_app`).
   This must NEVER point at the dev DB `laptop_austausch`. Creating it / granting needs sudo.
-- Run: `php artisan test` (132 tests). Rebuild assets after view/CSS/JS edits: `npm run build`.
+- Run: `php artisan test` (135 tests). Rebuild assets after view/CSS/JS edits: `npm run build`.
 - **Gotcha:** a single test that does `actingAs(admin)->get` THEN `actingAs(viewer)->get`
   fails — Filament's `AuthenticateSession` invalidates the session on a mid-test user switch
   (302). Split into one test per user.
@@ -255,11 +261,24 @@ Automated. On a fresh Debian server (Apache + MariaDB): get the code there, then
 `npm run build`, `migrate`, seeds the standard software catalog, creates a real admin login,
 sets permissions, builds caches, and configures the Apache vhost.
 
-- `deploy/setup.sh` — one-shot first install. `deploy/update.sh` — later updates
+**Three ways to get the code onto the server (DEPLOY.md, all still valid):** A — `git clone`
+(easiest updates), B — rsync/scp from the laptop, C — **USB stick / offline** (when the server
+has no network path).
+
+**Offline/USB path:** `setup.sh` is **bundle-aware** — its Composer step and Node/npm step are
+skipped when `vendor/autoload.php` and `public/build/manifest.json` are already present (detected
+into `HAVE_VENDOR`/`HAVE_BUILD`). `deploy/bundle.sh`, run **on the dev laptop** (needs internet),
+produces `laptop-austausch-paket.tar.gz`: a `git archive HEAD` export plus a `composer install
+--no-dev` `vendor/` and a fresh `npm run build`, with `node_modules` stripped (`.env`/`.git`
+excluded by design). On the server you just untar + `setup.sh`; the only remaining internet need
+is `apt` for the system packages (PHP/Apache/MariaDB). The tarball is gitignored (build artifact).
+
+- `deploy/setup.sh` — one-shot first install (online or offline-bundle). `deploy/bundle.sh` —
+  builds the offline USB package on the laptop. `deploy/update.sh` — later updates
   (`git pull` → build → `migrate` (auto-backs-up in prod) → caches).
 - `deploy/.env.production.example`, `deploy/apache-vhost.conf` — templates the script fills in.
-- `DEPLOY.md` — German step-by-step guide (code transfer, running it, post-install steps,
-  troubleshooting). **The scripts have not yet been run on the real server.**
+- `DEPLOY.md` — German step-by-step guide (3 code-transfer variants incl. USB + an `apt`
+  internet check, running it, post-install steps, troubleshooting). **Not yet run on the real server.**
 - After install, the data steps are done in the admin panel: import the employee CSV,
   generate slots, review the standard software catalog.
 
