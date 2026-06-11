@@ -43,7 +43,7 @@
                     wire:click="$set('kw', {{ $prevKw ?? 'null' }})"
                 >KW {{ $prevKw ?? $currentKw }}</x-filament::button>
 
-                <x-filament::input.select wire:model.live="kw">
+                <x-filament::input.select wire:model.live="kw" style="width:auto;min-width:7rem;">
                     @foreach ($weeks as $week)
                         <option value="{{ $week }}">KW {{ $week }}</option>
                     @endforeach
