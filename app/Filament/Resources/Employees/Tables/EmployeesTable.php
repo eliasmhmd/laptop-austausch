@@ -3,10 +3,17 @@
 namespace App\Filament\Resources\Employees\Tables;
 
 use App\Models\Employee;
+use App\Services\BookingManager;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class EmployeesTable
 {
@@ -59,6 +66,32 @@ class EmployeesTable
             ->recordActions([
                 ViewAction::make(),
             ])
-            ->toolbarActions([]);
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->label('Löschen')
+                        ->icon(Heroicon::Trash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Mitarbeitende löschen')
+                        ->modalDescription('Die ausgewählten Mitarbeitenden werden mit allen ihren Buchungen unwiderruflich gelöscht. Belegte Zeitfenster werden wieder freigegeben.')
+                        ->modalSubmitActionLabel('Endgültig löschen')
+                        ->visible(fn (): bool => Auth::guard('admin')->user()?->isAdmin() ?? false)
+                        ->action(function (Collection $records): void {
+                            // Erst die Slots freigeben, dann löschen – der DB-Cascade
+                            // entfernt die Buchungen, setzt aber die Slot-Zähler nicht zurück.
+                            app(BookingManager::class)->releaseSlotsForEmployees($records);
+
+                            $count = $records->count();
+                            $records->each(fn (Employee $employee) => $employee->delete());
+
+                            Notification::make()
+                                ->success()
+                                ->title($count === 1 ? '1 Mitarbeiter:in gelöscht' : $count.' Mitarbeitende gelöscht')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ]);
     }
 }

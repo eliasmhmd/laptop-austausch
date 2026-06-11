@@ -121,6 +121,41 @@ class BookingManager
     }
 
     /**
+     * Gibt alle von diesen Mitarbeitenden belegten Zeitfenster wieder frei.
+     * Nötig VOR dem endgültigen Löschen: der Datenbank-Cascade entfernt zwar die
+     * Buchungen, setzt aber den Slot-Zähler/-Status nicht zurück – die Fenster
+     * blieben sonst fälschlich „belegt“.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Employee>|array<int, int>  $employeeIds
+     */
+    public function releaseSlotsForEmployees(iterable $employeeIds): void
+    {
+        $ids = collect($employeeIds)
+            ->map(fn ($e) => $e instanceof Employee ? $e->getKey() : $e)
+            ->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($ids): void {
+            // time_slot_id ist auf bookings eindeutig, daher max. eine Buchung
+            // pro Fenster. Stornierte Buchungen haben ihr Fenster bereits frei-
+            // gegeben und werden ausgelassen.
+            $slotIds = Booking::query()
+                ->whereIn('employee_id', $ids)
+                ->where('status', '!=', 'cancelled')
+                ->pluck('time_slot_id');
+
+            TimeSlot::query()
+                ->whereIn('id', $slotIds)
+                ->lockForUpdate()
+                ->get()
+                ->each(fn (TimeSlot $slot) => $this->free($slot));
+        });
+    }
+
+    /**
      * Zeitfenster belegen: Zähler erhöhen, bei Erreichen der Kapazität sperren.
      */
     private function occupy(TimeSlot $slot): void
