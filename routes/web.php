@@ -9,7 +9,9 @@ use App\Http\Controllers\LaptopConfigController;
 use App\Http\Controllers\RescheduleController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+// Startseite leitet auf das Mitarbeiter-Dashboard (als Redirect statt Closure,
+// damit `php artisan route:cache` im Produktivbetrieb funktioniert).
+Route::redirect('/', '/dashboard');
 
 // Admin-PDF-Export (Imaging-Blätter). Eigene Anmelde-Prüfung im Controller,
 // damit Gäste zur Admin-Anmeldung (nicht zur Mitarbeiter-Anmeldung) gelangen.

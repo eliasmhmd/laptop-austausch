@@ -1,0 +1,150 @@
+# Installation auf dem Server (Debian + Apache + MariaDB)
+
+Diese Anleitung bringt **Laptop-Austausch** auf einen frischen Debian-Server.
+Du brauchst dafür im Grunde nur **drei Schritte**: Code auf den Server bringen,
+ein Skript starten, Fragen beantworten. Das Skript erledigt den Rest automatisch
+(PHP, Composer, Node, Datenbank, Apache, Berechtigungen, Admin-Zugang).
+
+> Du brauchst: SSH-Zugang zum Server und **root**-Rechte (oder `sudo`).
+> Die App läuft danach über **HTTP** unter der Server-IP. HTTPS/Domain kann
+> später ergänzt werden.
+
+---
+
+## Schritt 1 — Code auf den Server bringen
+
+Melde dich per SSH am Server an, z. B.:
+
+```bash
+ssh root@SERVER-IP
+```
+
+Installiere Git und lege das Projektverzeichnis an:
+
+```bash
+apt-get update && apt-get install -y git
+mkdir -p /var/www
+```
+
+Jetzt den Code holen — **eine** der beiden Varianten:
+
+### Variante A — direkt von GitHub klonen (empfohlen, einfache Updates später)
+
+```bash
+git clone https://github.com/eliasmhmd/laptop-austausch.git /var/www/laptop-austausch
+```
+
+Falls das Repository **privat** ist, fragt Git nach Benutzername + Passwort.
+Als Passwort brauchst du einen **Personal Access Token** (GitHub →
+Settings → Developer settings → Personal access tokens → „Generate new token
+(classic)", Haken bei `repo`). Den Token als Passwort eingeben.
+
+### Variante B — vom Laptop hochladen (kein GitHub-Zugang nötig)
+
+Auf **deinem Laptop** (im Projektordner) ausführen:
+
+```bash
+# .git und node_modules werden mit hochgeladen bzw. neu erzeugt – das ist ok.
+rsync -av --exclude node_modules --exclude vendor --exclude .env \
+  ./ root@SERVER-IP:/var/www/laptop-austausch/
+```
+
+Hast du kein `rsync`, geht auch `scp -r`.
+
+> **Wichtig:** Niemals die `.env`-Datei oder echte Mitarbeiterdaten mit hochladen
+> oder ins Git geben. Das Skript erzeugt auf dem Server eine eigene `.env`.
+
+---
+
+## Schritt 2 — Installationsskript starten
+
+Auf dem **Server**:
+
+```bash
+cd /var/www/laptop-austausch
+sudo bash deploy/setup.sh
+```
+
+Das Skript fragt nacheinander:
+
+1. **Adresse** der App – einfach mit Enter bestätigen (nimmt die Server-IP).
+2. **Admin-Name** – z. B. dein Name oder „IT Kreis Groß-Gerau".
+3. **Admin-E-Mail** – damit meldest du dich später im Admin-Panel an.
+4. **Admin-Passwort** – frei wählbar (mind. 8 Zeichen).
+
+Danach läuft alles automatisch (dauert ein paar Minuten). Am Ende zeigt es dir
+die App-Adresse und die Admin-Anmeldung an.
+
+Das Skript installiert/erledigt:
+
+- PHP 8.3 inkl. aller nötigen Erweiterungen (u. a. `intl`, `gd`, `mysql`, `zip`)
+- Composer + Node.js 20, Frontend-Build (`npm run build`)
+- `mariadb-server` **und** `mariadb-client` (Letzteres für die Datensicherung)
+- Datenbank `laptop_austausch` + Benutzer `laptop_app` (Passwort wird erzeugt
+  und in `storage/app/db-zugang.txt` abgelegt)
+- `.env` mit korrekten Werten (u. a. `SESSION_DRIVER=file`, `APP_LOCALE=de`)
+- Datenbank-Migration + Standardsoftware-Katalog
+- deinen Admin-Zugang
+- Dateiberechtigungen + Apache-VirtualHost
+
+---
+
+## Schritt 3 — Im Admin-Panel die echten Daten einrichten
+
+Öffne im Browser `http://SERVER-IP/admin` und melde dich mit deiner Admin-E-Mail
+und deinem Passwort an. Dann:
+
+1. **Mitarbeitende importieren** – Menü „Mitarbeitende" → Import, die echte
+   CSV hochladen (Spalten: `PC-Nummer`, `Login`, `Vorname`, `Nachname`,
+   `eMail-Adresse`, `Fachabteilung`).
+2. **Zeitfenster erzeugen** – im **Kalender** auf „Slots generieren" und den
+   Zeitraum wählen (z. B. 10.08.2026 – 11.09.2026).
+3. **Standardsoftware** im „Software-Katalog" prüfen/ergänzen.
+
+Fertig – die Mitarbeitenden können sich nun unter `http://SERVER-IP` mit
+**KVGG-Nummer + PC-Nummer** anmelden und Termine buchen.
+
+---
+
+## Updates später einspielen
+
+Wenn es eine neue Version gibt:
+
+```bash
+cd /var/www/laptop-austausch
+sudo bash deploy/update.sh
+```
+
+Das holt den neuen Code, baut alles neu und migriert die Datenbank. **Vor jeder
+Migration im Produktivbetrieb wird automatisch eine Sicherung erstellt** (liegt
+unter `storage/app/backups/`).
+
+---
+
+## Datensicherung
+
+- **Automatisch:** vor jeder Migration (siehe oben).
+- **Manuell:** im Admin-Panel unter **„Datensicherung"** (nur Admin-Rolle) –
+  Backup erstellen, herunterladen, löschen oder aus einer `.sql`-Datei
+  wiederherstellen.
+- Die Sicherungen liegen lokal in `storage/app/backups/` und sind **nicht** im
+  Git (sie enthalten Personendaten).
+
+---
+
+## Wenn etwas klemmt
+
+- **Weiße Seite / Fehler 500:** Detailmeldung anzeigen lassen:
+  `tail -n 50 storage/logs/laravel.log`
+- **„403 Forbidden" oder es lädt nur das Verzeichnis:** mod_rewrite fehlt –
+  `a2enmod rewrite && systemctl reload apache2`.
+- **Anmeldung schlägt sofort fehl:** prüfen, dass in `.env`
+  `SESSION_DRIVER=file` steht, danach `php8.3 artisan config:cache`.
+- **Backups gehen nicht:** prüfen, dass `mysqldump` da ist (`which mysqldump`);
+  notfalls `apt-get install -y mariadb-client`.
+- **Nach Code-Änderungen wirkt nichts:** Caches erneuern –
+  `php8.3 artisan config:cache && php8.3 artisan route:cache && php8.3 artisan view:cache`.
+
+> Hinweis: Die Skripte sind für einen Standard-Debian-Server geschrieben, aber
+> auf deinem konkreten Server noch nicht erprobt. Falls eine Stelle hakt, kopier
+> die Fehlermeldung – damit lässt sich gezielt nachbessern.
