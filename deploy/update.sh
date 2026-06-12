@@ -8,11 +8,13 @@
 # Workflow für Bundle-Updates (USB/Cloud):
 #   1. Auf dem Entwickler-Laptop:  bash deploy/bundle.sh
 #   2. laptop-austausch-paket.tar.gz auf den Server übertragen
-#   3. Auf dem Server:
-#        tar -xzf laptop-austausch-paket.tar.gz
-#        cp /alter/pfad/.env laptop-austausch/.env
+#   3. Auf dem Server (im Elternordner der Installation, z.B. /var/www):
+#        tar -xzf laptop-austausch-paket.tar.gz   # überschreibt Dateien direkt
 #        cd laptop-austausch
 #        sudo bash deploy/update.sh
+#
+#   .env und storage/ (Backups, Daten) sind nicht im Paket und bleiben erhalten.
+#   Nichts muss vorher gelöscht werden.
 
 set -euo pipefail
 
