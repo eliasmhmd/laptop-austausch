@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 #
-# Aktualisiert eine bereits installierte Laptop-Austausch-Instanz auf den
-# neuesten Stand. Als root AUS dem Projektordner ausführen:
+# Aktualisiert eine bereits installierte Laptop-Austausch-Instanz.
+# Als root AUS dem entpackten Paketordner ausführen:
 #
 #   sudo bash deploy/update.sh
 #
-# Holt den neuen Code (git pull), installiert Abhängigkeiten, baut die Assets,
-# migriert die Datenbank (im Produktivbetrieb wird davor automatisch eine
-# Sicherung erstellt) und erneuert die Caches.
+# Workflow für Bundle-Updates (USB/Cloud):
+#   1. Auf dem Entwickler-Laptop:  bash deploy/bundle.sh
+#   2. laptop-austausch-paket.tar.gz auf den Server übertragen
+#   3. Auf dem Server:
+#        tar -xzf laptop-austausch-paket.tar.gz
+#        cp /alter/pfad/.env laptop-austausch/.env
+#        cd laptop-austausch
+#        sudo bash deploy/update.sh
 
 set -euo pipefail
 
@@ -20,27 +25,35 @@ die()  { echo "FEHLER: $*" >&2; exit 1; }
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$APP_DIR"
 [ -f artisan ] || die "Kein Laravel-Projekt gefunden (artisan fehlt)."
-PHP="php8.3"
+
+# PHP-Version automatisch ermitteln.
+if   command -v php8.4 >/dev/null 2>&1; then PHP="php8.4"
+elif command -v php8.3 >/dev/null 2>&1; then PHP="php8.3"
+elif command -v php8.2 >/dev/null 2>&1; then PHP="php8.2"
+elif command -v php    >/dev/null 2>&1; then PHP="php"
+else die "Kein PHP gefunden."
+fi
+
+HAVE_VENDOR=false; [ -f vendor/autoload.php ]        && HAVE_VENDOR=true
+HAVE_BUILD=false;  [ -f public/build/manifest.json ] && HAVE_BUILD=true
 
 step "In Wartungsmodus schalten"
 ${PHP} artisan down || true
 trap '${PHP} artisan up || true' EXIT
 
-step "Neuen Code holen"
-if [ -d .git ]; then
-  git pull --ff-only
+if [ "$HAVE_VENDOR" = true ]; then
+  step "PHP-Abhängigkeiten bereits im Paket enthalten – kein composer nötig"
 else
-  echo "Kein Git-Repository – Code bitte manuell aktualisieren, dann erneut ausführen."
+  die "vendor/ fehlt. Bitte Paket mit 'bash deploy/bundle.sh' neu erzeugen."
 fi
 
-step "PHP-Abhängigkeiten installieren"
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
+if [ "$HAVE_BUILD" = true ]; then
+  step "Frontend-Assets bereits im Paket enthalten – kein npm nötig"
+else
+  die "public/build/ fehlt. Bitte Paket mit 'bash deploy/bundle.sh' neu erzeugen."
+fi
 
-step "Frontend-Assets bauen"
-npm ci
-npm run build
-
-step "Datenbank migrieren (im Produktivbetrieb wird vorher gesichert)"
+step "Datenbank migrieren (im Produktivbetrieb wird vorher automatisch gesichert)"
 ${PHP} artisan migrate --force
 
 step "Caches erneuern"
@@ -51,5 +64,7 @@ ${PHP} artisan view:cache
 step "Berechtigungen setzen"
 mkdir -p storage/app/backups
 chown -R www-data:www-data storage bootstrap/cache
+find storage bootstrap/cache -type d -exec chmod 775 {} \;
+find storage bootstrap/cache -type f -exec chmod 664 {} \;
 
 step "Fertig – App wird wieder aktiviert."
