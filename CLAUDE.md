@@ -14,11 +14,10 @@ change; surface design decisions and spec mismatches rather than guessing.
 
 ---
 
-## Current state (as of 2026-06-11)
+## Current state (as of 2026-06-12)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) has an automated install kit ready (online **and** offline/USB)
-but hasn't been run on the real server yet. **135 feature tests pass.**
+Deployment (Phase 9) **done — app is running on the real server.** **135 feature tests pass.**
 
 | Phase | Status | What shipped |
 |-------|--------|--------------|
@@ -30,7 +29,7 @@ but hasn't been run on the real server yet. **135 feature tests pass.**
 | 6 — iCal download | ✅ | `.ics` download, owner-only |
 | 7 — Admin panel (Filament v4) | ✅ | All resources, slot generator, CSV import, admin accounts, no-show/sick, manual booking mgmt, PDF + Excel export, software catalog |
 | 8 — Polish & testing | ✅ | German error pages (404/403/419/500/503/429), fresh-seed flow verified |
-| 9 — Deployment | 🟡 | Automated kit ready (`deploy/setup.sh` + `deploy/bundle.sh` USB/offline + `DEPLOY.md`); not yet run on the real server |
+| 9 — Deployment | ✅ | Running on real server (Debian 13 Trixie, PHP 8.4). Bundle-only workflow via USB/cloud. |
 
 **Beyond the original spec, also built:**
 - **Admin-Kalender as the panel home** — replaces the default Filament dashboard *and* the
@@ -58,16 +57,16 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 
 - **Laravel 13** + **Filament v4** — Filament v3 cannot run on Laravel 13. (Laravel Boost is
   installed; see `.mcp.json`.)
-- **PHP 8.3**, Composer, Node.js. Frontend: Blade + Tailwind CSS + Alpine.js (Vite build).
+- **PHP 8.3** (dev) / **PHP 8.4** (production), Composer, Node.js. Frontend: Blade + Tailwind CSS + Alpine.js (Vite build).
 - **MariaDB** locally (matches MySQL in production). App DB `laptop_austausch`, app user
   `laptop_app`. `root` uses socket auth (needs sudo).
 - **Excel**: `maatwebsite/excel`. **PDF**: `barryvdh/laravel-dompdf`.
-- Production server: **Linux + Apache + MariaDB**. Needs PHP extensions **`php-intl`** AND
-  **`php-gd`** (Filament needs intl; Excel/image writing needs gd), plus the **`mariadb-client`**
-  package (`mysqldump`/`mysql` in PATH — for the backup/restore system). Run `npm run build`
-  after every deploy/pull. **Production `.env` must set `SESSION_DRIVER=file`** (there is no
+- Production server: **Debian 13 (Trixie), Apache, MariaDB, PHP 8.4** (from official Debian repos).
+  Needs PHP extensions **`php-intl`** AND **`php-gd`** (Filament needs intl; Excel/image writing
+  needs gd), plus the **`mariadb-client`** package (`mysqldump`/`mysql` in PATH — for the
+  backup/restore system). **Production `.env` must set `SESSION_DRIVER=file`** (there is no
   sessions table — the default `database` driver would break login) **and `APP_LOCALE=de`**
-  (default is `en`).
+  (default is `en`). Assets are pre-built in the bundle — `npm run build` is NOT run on the server.
 
 ### Two auth guards (`config/auth.php`)
 - `employee` — public side. Login = `kvgg_nummer` (username, case-insensitive) +
@@ -252,39 +251,42 @@ finalizing those importers.
 
 ---
 
-## Deployment (Phase 9)
+## Deployment (Phase 9) — complete
 
-Automated. On a fresh Debian server (Apache + MariaDB): get the code there, then
-`sudo bash deploy/setup.sh` from the project root. The script installs PHP 8.3 (Sury repo)
-+ extensions, Composer, Node 20, Apache + MariaDB, creates the DB/user, writes a production
-`.env` (with `SESSION_DRIVER=file`, `APP_LOCALE=de`), runs `composer install --no-dev`,
-`npm run build`, `migrate`, seeds the standard software catalog, creates a real admin login,
-sets permissions, builds caches, and configures the Apache vhost.
+The app runs on the real server (Debian 13 Trixie, PHP 8.4, Apache, MariaDB).
 
-**Three ways to get the code onto the server (DEPLOY.md, all still valid):** A — `git clone`
-(easiest updates), B — rsync/scp from the laptop, C — **USB stick / offline** (when the server
-has no network path).
+**Workflow — always use the bundle** (server has no Composer/Node/git):
+1. Make and commit changes on the dev laptop
+2. `bash deploy/bundle.sh` → produces `laptop-austausch-paket.tar.gz` (18 MB, includes `vendor/` + `public/build/`)
+3. Upload the `.tar.gz` to cloud/USB and transfer to server
 
-**Offline/USB path:** `setup.sh` is **bundle-aware** — its Composer step and Node/npm step are
-skipped when `vendor/autoload.php` and `public/build/manifest.json` are already present (detected
-into `HAVE_VENDOR`/`HAVE_BUILD`). `deploy/bundle.sh`, run **on the dev laptop** (needs internet),
-produces `laptop-austausch-paket.tar.gz`: a `git archive HEAD` export plus a `composer install
---no-dev` `vendor/` and a fresh `npm run build`, with `node_modules` stripped (`.env`/`.git`
-excluded by design). On the server you just untar + `setup.sh`; the only remaining internet need
-is `apt` for the system packages (PHP/Apache/MariaDB). The tarball is gitignored (build artifact).
+**First install** (once):
+```bash
+tar -xzf laptop-austausch-paket.tar.gz
+cd laptop-austausch
+sudo bash deploy/setup.sh   # asks for server address, admin name/email/password
+```
+`setup.sh` auto-detects the PHP version (8.4→8.3→8.2), installs only missing PHP extensions
+from official Debian repos (no Sury, no GitHub, no nodesource), creates the DB/user, writes
+`.env`, migrates, seeds the software catalog, creates the admin login, sets permissions, and
+configures the Apache vhost. DB password is preserved across re-runs (read from existing `.env`).
 
-- `deploy/setup.sh` — one-shot first install (online or offline-bundle). `deploy/bundle.sh` —
-  builds the offline USB package on the laptop. `deploy/update.sh` — later updates
-  (`git pull` → build → `migrate` (auto-backs-up in prod) → caches).
-- `deploy/.env.production.example`, `deploy/apache-vhost.conf` — templates the script fills in.
-- `DEPLOY.md` — German step-by-step guide (3 code-transfer variants incl. USB + an `apt`
-  internet check, running it, post-install steps, troubleshooting). **Not yet run on the real server.**
-- After install, the data steps are done in the admin panel: import the employee CSV,
-  generate slots, review the standard software catalog.
+**Updates** (after first install):
+```bash
+# On server, in the parent dir of the installation:
+tar -xzf laptop-austausch-paket.tar.gz   # overwrites files; .env and storage/ are preserved
+cd laptop-austausch
+sudo bash deploy/update.sh               # maintenance mode → migrate → caches → back online
+```
+
+- `deploy/setup.sh` — first install. `deploy/bundle.sh` — builds the bundle on the dev laptop.
+  `deploy/update.sh` — updates an existing install (bundle-aware, PHP auto-detected).
+- `deploy/.env.production.example`, `deploy/apache-vhost.conf` — templates filled in by setup.sh.
+- `DEPLOY.md` — German step-by-step guide.
+- After first install: import employee CSV, generate slots, review software catalog in admin panel.
 
 ## Remaining / optional work
 
-- Run `deploy/setup.sh` on the real server and verify (Phase 9).
 - **Optional**: SCCM hardware CSV importer → `laptop_configs` old_* fields (need sample rows).
 - **Open**: confirm the real employee export is `.csv` vs `.xlsx` (the importer reads CSV text).
 
