@@ -5,9 +5,13 @@
 #
 #   sudo bash deploy/setup.sh
 #
-# Das Skript installiert PHP 8.3 + Erweiterungen, Composer, Node, richtet die
-# Datenbank, die .env, die Berechtigungen und den Apache-VirtualHost ein und
-# legt einen Admin-Zugang an. Es ist gefahrlos mehrfach ausführbar.
+# Das Skript richtet PHP-Erweiterungen, die Datenbank, die .env, die
+# Berechtigungen und den Apache-VirtualHost ein und legt einen Admin-Zugang an.
+# Es ist gefahrlos mehrfach ausführbar.
+#
+# Voraussetzung: Das Paket wurde mit deploy/bundle.sh erstellt (enthält vendor/
+# und public/build/) – dann wird weder Composer noch Node/npm benötigt.
+# Alle Pakete kommen ausschließlich aus den offiziellen Debian-Paketquellen.
 
 set -euo pipefail
 
@@ -32,7 +36,15 @@ cd "$APP_DIR"
 # ----------------------------------------------------------------------------
 DB_NAME="laptop_austausch"
 DB_USER="laptop_app"
-PHP="php8.3"
+
+# PHP-Version automatisch ermitteln (bevorzugt 8.4, dann 8.3, dann 8.2).
+if   command -v php8.4 >/dev/null 2>&1; then PHP="php8.4"
+elif command -v php8.3 >/dev/null 2>&1; then PHP="php8.3"
+elif command -v php8.2 >/dev/null 2>&1; then PHP="php8.2"
+elif command -v php    >/dev/null 2>&1; then PHP="php"
+else die "Kein PHP gefunden. Bitte PHP 8.2+ über die offiziellen Debian-Paketquellen installieren."
+fi
+info "Verwende PHP: $PHP ($(${PHP} -r 'echo PHP_VERSION;'))"
 
 # Server-Adresse automatisch ermitteln (erste IP), kann überschrieben werden.
 SERVER_IP="$(hostname -I | awk '{print $1}')"
@@ -51,12 +63,12 @@ done
 DB_PASS="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-24)"
 
 # ----------------------------------------------------------------------------
-# 1. Systempakete
+# 1. Systempakete (nur offizielle Debian-Quellen)
 # ----------------------------------------------------------------------------
 step "Systempakete aktualisieren und Grundwerkzeuge installieren"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y ca-certificates curl wget gnupg lsb-release apt-transport-https unzip git openssl
+apt-get install -y ca-certificates unzip openssl
 
 step "Apache und MariaDB installieren (falls noch nicht vorhanden)"
 apt-get install -y apache2 mariadb-server mariadb-client
@@ -64,64 +76,42 @@ systemctl enable --now apache2
 systemctl enable --now mariadb
 
 # ----------------------------------------------------------------------------
-# 2. PHP 8.3 (über das Sury-Repository – funktioniert auf allen Debian-Versionen)
+# 2. PHP-Erweiterungen nachinstallieren (PHP selbst ist bereits vorhanden)
 # ----------------------------------------------------------------------------
-step "PHP 8.3 installieren"
-if ! command -v "$PHP" >/dev/null 2>&1; then
-  install -d -m 0755 /etc/apt/keyrings
-  curl -fsSL https://packages.sury.org/php/apt.gpg -o /etc/apt/keyrings/sury-php.gpg
-  echo "deb [signed-by=/etc/apt/keyrings/sury-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" \
-    > /etc/apt/sources.list.d/sury-php.list
-  apt-get update -y
-fi
+step "PHP-Erweiterungen sicherstellen (aus offiziellen Debian-Paketen)"
+
+# PHP-Kurzversion ermitteln (z.B. "8.4") für Paketnamen wie libapache2-mod-php8.4
+PHP_VER="$(${PHP} -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')"
+
 apt-get install -y \
-  ${PHP} ${PHP}-cli ${PHP}-common ${PHP}-mysql ${PHP}-mbstring ${PHP}-xml \
+  ${PHP}-mysql ${PHP}-mbstring ${PHP}-xml \
   ${PHP}-curl ${PHP}-zip ${PHP}-gd ${PHP}-intl ${PHP}-bcmath \
-  libapache2-mod-${PHP}
+  libapache2-mod-php${PHP_VER}
 
-# Sicherstellen, dass Apache PHP 8.3 nutzt.
-a2enmod ${PHP} rewrite >/dev/null 2>&1 || true
-a2dismod php8.4 php8.2 php8.1 mpm_event >/dev/null 2>&1 || true
-a2enmod mpm_prefork >/dev/null 2>&1 || true
+# Sicherstellen, dass Apache die richtige PHP-Version nutzt.
+a2enmod php${PHP_VER} rewrite mpm_prefork >/dev/null 2>&1 || true
+# Andere PHP-Versionen für Apache deaktivieren (falls vorhanden).
+for OTHER in 8.1 8.2 8.3 8.4; do
+  [ "$OTHER" != "$PHP_VER" ] && a2dismod php${OTHER} mpm_event >/dev/null 2>&1 || true
+done
 
-# Sind die Abhängigkeiten und gebauten Assets bereits im Paket (USB-Stick)?
-# Dann brauchen wir auf dem Server WEDER Composer NOCH Node/npm und laden nichts
-# davon aus dem Internet. (Erzeugt mit deploy/bundle.sh auf dem Entwickler-Rechner.)
-HAVE_VENDOR=false; [ -f vendor/autoload.php ] && HAVE_VENDOR=true
+# ----------------------------------------------------------------------------
+# Bundle-Erkennung: vendor/ und public/build/ aus deploy/bundle.sh?
+# ----------------------------------------------------------------------------
+HAVE_VENDOR=false; [ -f vendor/autoload.php ]        && HAVE_VENDOR=true
 HAVE_BUILD=false;  [ -f public/build/manifest.json ] && HAVE_BUILD=true
 
-# ----------------------------------------------------------------------------
-# 3. Composer (nur, wenn vendor/ NICHT mitgeliefert wurde)
-# ----------------------------------------------------------------------------
-if [ "$HAVE_VENDOR" = true ]; then
-  step "PHP-Abhängigkeiten bereits im Paket enthalten – Composer wird nicht benötigt"
-else
-  step "Composer installieren"
-  if ! command -v composer >/dev/null 2>&1; then
-    EXPECTED="$(curl -fsSL https://composer.github.io/installer.sig)"
-    curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
-    ACTUAL="$(${PHP} -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
-    [ "$EXPECTED" = "$ACTUAL" ] || die "Composer-Installer-Prüfsumme stimmt nicht."
-    ${PHP} /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-    rm -f /tmp/composer-setup.php
-  fi
+if [ "$HAVE_VENDOR" = false ]; then
+  die "vendor/ fehlt. Bitte das Paket mit 'bash deploy/bundle.sh' auf dem Entwickler-Rechner erzeugen und erneut übertragen."
+fi
+if [ "$HAVE_BUILD" = false ]; then
+  die "public/build/ fehlt. Bitte das Paket mit 'bash deploy/bundle.sh' auf dem Entwickler-Rechner erzeugen und erneut übertragen."
 fi
 
-# ----------------------------------------------------------------------------
-# 4. Node.js 20 (nur, wenn die Assets NICHT mitgeliefert wurden)
-# ----------------------------------------------------------------------------
-if [ "$HAVE_BUILD" = true ]; then
-  step "Frontend-Assets bereits im Paket enthalten – Node/npm wird nicht benötigt"
-else
-  step "Node.js 20 installieren"
-  if ! command -v node >/dev/null 2>&1; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
-  fi
-fi
+step "PHP-Abhängigkeiten und Frontend-Assets bereits im Paket enthalten – kein Download nötig"
 
 # ----------------------------------------------------------------------------
-# 5. Datenbank anlegen
+# 3. Datenbank anlegen
 # ----------------------------------------------------------------------------
 step "Datenbank und Datenbank-Benutzer anlegen"
 mariadb <<SQL
@@ -134,51 +124,32 @@ SQL
 info "Datenbank '${DB_NAME}', Benutzer '${DB_USER}' bereit."
 
 # ----------------------------------------------------------------------------
-# 6. .env erstellen
+# 4. .env erstellen
 # ----------------------------------------------------------------------------
 step "Konfiguration (.env) erstellen"
 if [ ! -f .env ]; then
   cp deploy/.env.production.example .env
 fi
-set_env() { # set_env SCHLÜSSEL WERT
+set_env() {
   local key="$1"; local val="$2"
   if grep -qE "^${key}=" .env; then
-    # Wert escapen (für sed) und setzen.
     val="$(printf '%s' "$val" | sed -e 's/[\/&|]/\\&/g')"
     sed -i -E "s|^${key}=.*|${key}=${val}|" .env
   else
     echo "${key}=${val}" >> .env
   fi
 }
-set_env APP_URL "http://${SERVER_NAME}"
-set_env DB_DATABASE "${DB_NAME}"
-set_env DB_USERNAME "${DB_USER}"
-set_env DB_PASSWORD "${DB_PASS}"
+set_env APP_URL      "http://${SERVER_NAME}"
+set_env DB_DATABASE  "${DB_NAME}"
+set_env DB_USERNAME  "${DB_USER}"
+set_env DB_PASSWORD  "${DB_PASS}"
 
 # ----------------------------------------------------------------------------
-# 7. Abhängigkeiten + Build (übersprungen, wenn schon im Paket)
+# 5. App-Key, Migrationen, Grunddaten
 # ----------------------------------------------------------------------------
-if [ "$HAVE_VENDOR" = true ]; then
-  info "vendor/ aus dem Paket übernommen – kein composer install nötig."
-else
-  step "PHP-Abhängigkeiten installieren (composer)"
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction
-fi
-
-if [ "$HAVE_BUILD" = true ]; then
-  info "public/build/ aus dem Paket übernommen – kein npm-Build nötig."
-else
-  step "Frontend-Assets bauen (npm)"
-  npm ci
-  npm run build
-fi
-
 step "App-Key erzeugen"
 ${PHP} artisan key:generate --force
 
-# ----------------------------------------------------------------------------
-# 8. Datenbank migrieren + Grunddaten
-# ----------------------------------------------------------------------------
 step "Datenbank migrieren"
 ${PHP} artisan migrate --force
 
@@ -190,7 +161,7 @@ ${PHP} artisan tinker --execute="\App\Models\AdminUser::updateOrCreate(['email' 
 info "Admin angelegt: ${ADMIN_EMAIL}"
 
 # ----------------------------------------------------------------------------
-# 9. Caches aufbauen
+# 6. Caches aufbauen
 # ----------------------------------------------------------------------------
 step "Symlink und Konfigurations-Caches erstellen"
 ${PHP} artisan storage:link || true
@@ -199,7 +170,7 @@ ${PHP} artisan route:cache
 ${PHP} artisan view:cache
 
 # ----------------------------------------------------------------------------
-# 10. Berechtigungen (NACH den Caches – alles von root Erstellte an www-data übergeben)
+# 7. Berechtigungen (NACH den Caches – alles von root Erstellte an www-data übergeben)
 # ----------------------------------------------------------------------------
 step "Dateiberechtigungen setzen"
 mkdir -p storage/app/backups
@@ -208,7 +179,7 @@ find storage bootstrap/cache -type d -exec chmod 775 {} \;
 find storage bootstrap/cache -type f -exec chmod 664 {} \;
 
 # ----------------------------------------------------------------------------
-# 11. Apache-VirtualHost
+# 8. Apache-VirtualHost
 # ----------------------------------------------------------------------------
 step "Apache-VirtualHost einrichten"
 VHOST=/etc/apache2/sites-available/laptop-austausch.conf
@@ -231,7 +202,7 @@ DB_PASS_FILE="${APP_DIR}/storage/app/db-zugang.txt"
 chmod 600 "$DB_PASS_FILE"
 
 echo
-step "Fertig! 🎉"
+step "Fertig!"
 info "App-Adresse:     http://${SERVER_NAME}"
 info "Admin-Anmeldung: http://${SERVER_NAME}/admin   (${ADMIN_EMAIL})"
 info "DB-Passwort liegt in: ${DB_PASS_FILE}"
