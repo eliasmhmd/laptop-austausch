@@ -59,8 +59,13 @@ while :; do
   [ "${#ADMIN_PASS}" -ge 8 ] && break || warn "Zu kurz, bitte erneut."
 done
 
-# DB-Passwort automatisch erzeugen (nur unkritische Zeichen).
-DB_PASS="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-24)"
+# DB-Passwort: vorhandenes aus .env wiederverwenden, sonst neu erzeugen.
+# So bleibt das Passwort bei mehrfachem Ausführen des Skripts konsistent.
+if [ -f .env ] && grep -qE "^DB_PASSWORD=.+" .env; then
+  DB_PASS="$(grep ^DB_PASSWORD .env | cut -d= -f2)"
+else
+  DB_PASS="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-24)"
+fi
 
 # ----------------------------------------------------------------------------
 # 1. Systempakete (nur offizielle Debian-Quellen)
