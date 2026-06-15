@@ -24,9 +24,11 @@ class ImagingSheetController extends Controller
             return $redirect;
         }
 
+        $pcNummer = $this->safeFilenamePart($this->exporter->pcNumberForBooking($booking));
+
         return $this->download(
             $this->exporter->pdfForBooking($booking),
-            'imaging-blatt-'.$booking->id.'.pdf',
+            'Laufzettel-'.$pcNummer.'.pdf',
         );
     }
 
@@ -46,7 +48,7 @@ class ImagingSheetController extends Controller
 
         return $this->download(
             $this->exporter->pdfForDate($date),
-            'imaging-blaetter-'.$date.'.pdf',
+            'Laufzettel-'.$date.'.pdf',
         );
     }
 
@@ -60,6 +62,16 @@ class ImagingSheetController extends Controller
         }
 
         return redirect()->guest(route('filament.admin.auth.login'));
+    }
+
+    /**
+     * Macht eine PC-Nummer dateinamen-tauglich (nur Buchstaben, Ziffern, - und _).
+     */
+    private function safeFilenamePart(string $value): string
+    {
+        $clean = preg_replace('/[^A-Za-z0-9_-]+/', '-', trim($value));
+
+        return trim((string) $clean, '-') ?: 'unbekannt';
     }
 
     private function download(string $pdf, string $filename): Response

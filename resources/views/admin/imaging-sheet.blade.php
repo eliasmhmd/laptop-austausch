@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <title>Imaging-Blatt</title>
+    <title>Laufzettel</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; margin: 0; }
@@ -25,7 +25,7 @@
 <body>
 @foreach ($sheets as $sheet)
     <div class="sheet">
-        <h1>Imaging-Blatt</h1>
+        <h1>Laufzettel</h1>
         <p class="sub">Laptop-Austausch · Kreis Groß-Gerau</p>
 
         <table class="meta">

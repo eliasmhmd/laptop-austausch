@@ -34,6 +34,17 @@ class ImagingSheetExporter
     }
 
     /**
+     * Die PC-Nummer des alten Geräts dieser Buchung – für den Dateinamen des
+     * Laufzettels. Fällt auf die PC-Nummer der/des Mitarbeitenden zurück.
+     */
+    public function pcNumberForBooking(Booking $booking): string
+    {
+        $booking->loadMissing(self::RELATIONS);
+
+        return $booking->laptopConfig?->old_pc_nummer ?: ($booking->employee?->pc_nummer ?? 'unbekannt');
+    }
+
+    /**
      * Alle nicht stornierten Buchungen eines Tages (nach Uhrzeit sortiert).
      *
      * @return Collection<int, Booking>
