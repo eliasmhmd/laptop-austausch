@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Bookings\BookingResource;
+use App\Models\Booking;
 use App\Models\TimeSlot;
 use App\Services\BookingManager;
 use App\Services\SlotGenerator;
@@ -16,6 +17,7 @@ use Filament\Panel;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use RuntimeException;
 
 /**
@@ -39,6 +41,14 @@ class Kalender extends Page
     /** Aktuell angezeigte Kalenderwoche. */
     public ?int $kw = null;
 
+    /**
+     * ID der zu verschiebenden Buchung (aus der Buchungsansicht übergeben).
+     * Ist sie gesetzt, befindet sich der Kalender im „Verschieben"-Modus: ein
+     * Klick auf ein freies Zeitfenster verschiebt diese Buchung dorthin.
+     */
+    #[Url]
+    public ?int $verschieben = null;
+
     // Macht den Kalender zur Startseite des Panels (Pfad /admin statt /admin/kalender).
     public static function getRoutePath(Panel $panel): string
     {
@@ -47,7 +57,34 @@ class Kalender extends Page
 
     public function mount(): void
     {
+        // Im Verschieben-Modus mit der Woche des aktuellen Termins starten,
+        // damit die Verwaltung gleich den passenden Zeitraum sieht.
+        if ($this->kw === null && $this->verschieben !== null) {
+            $this->kw = $this->bookingToMove()?->timeSlot?->calendar_week;
+        }
+
         $this->kw ??= TimeSlot::query()->min('calendar_week');
+    }
+
+    /**
+     * Die gerade zu verschiebende Buchung (oder null) – nur gültige, nicht
+     * stornierte Buchungen kommen in Frage.
+     */
+    public function bookingToMove(): ?Booking
+    {
+        if ($this->verschieben === null) {
+            return null;
+        }
+
+        return Booking::with('employee', 'timeSlot')
+            ->where('status', '!=', 'cancelled')
+            ->find($this->verschieben);
+    }
+
+    /** Verschieben-Modus verlassen, ohne etwas zu ändern. */
+    public function abbrechenVerschieben(): void
+    {
+        $this->verschieben = null;
     }
 
     /** Nur Admins dürfen buchen/generieren – Betrachter sehen den Kalender nur an. */
@@ -155,6 +192,53 @@ class Kalender extends Page
             });
     }
 
+    /**
+     * Verschiebt die gemerkte Buchung (`$this->verschieben`) in das angeklickte
+     * freie Zeitfenster. Nach Erfolg wird der Verschieben-Modus verlassen.
+     */
+    public function verschiebenAction(): Action
+    {
+        return Action::make('verschieben')
+            ->visible(fn (): bool => $this->canManage())
+            ->requiresConfirmation()
+            ->modalHeading('Termin verschieben')
+            ->modalDescription(function (array $arguments): ?string {
+                $booking = $this->bookingToMove();
+                $slot = TimeSlot::find($arguments['timeSlotId'] ?? null);
+
+                if (! $booking || ! $slot) {
+                    return null;
+                }
+
+                $name = trim($booking->employee?->vorname.' '.$booking->employee?->nachname);
+
+                return $name.' wird auf '
+                    .Carbon::parse($slot->slot_date)->translatedFormat('l, d.m.Y')
+                    .' um '.substr($slot->start_time, 0, 5).' Uhr verschoben.';
+            })
+            ->modalSubmitActionLabel('Verschieben')
+            ->action(function (array $arguments): void {
+                $booking = $this->bookingToMove();
+
+                if (! $booking) {
+                    Notification::make()->title('Buchung nicht gefunden.')->danger()->send();
+
+                    return;
+                }
+
+                try {
+                    app(BookingManager::class)->move($booking, (int) $arguments['timeSlotId']);
+                } catch (RuntimeException $e) {
+                    Notification::make()->title($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                $this->verschieben = null; // Verschieben-Modus verlassen
+                Notification::make()->title('Termin wurde verschoben.')->success()->send();
+            });
+    }
+
     protected function getViewData(): array
     {
         $weeks = TimeSlot::query()->distinct()->orderBy('calendar_week')->pluck('calendar_week');
@@ -181,6 +265,7 @@ class Kalender extends Page
             'times' => $slots->map(fn (TimeSlot $s): string => substr($s->start_time, 0, 5))->unique()->sort()->values(),
             'grid' => $grid,
             'canManage' => $this->canManage(),
+            'moveBooking' => $this->bookingToMove(),
         ];
     }
 }

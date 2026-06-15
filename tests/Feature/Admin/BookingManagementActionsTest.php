@@ -34,23 +34,16 @@ class BookingManagementActionsTest extends TestCase
             ->assertActionHidden('createBooking');
     }
 
-    public function test_admin_can_move_a_booking_to_another_slot(): void
+    public function test_move_booking_button_links_to_the_calendar_with_the_booking(): void
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);
         $employee = Employee::factory()->create();
-        $oldSlot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0, 'capacity' => 1]);
-        $newSlot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0, 'capacity' => 1]);
-
-        $booking = app(\App\Services\BookingManager::class)->create($employee->id, $oldSlot->id);
+        $slot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0, 'capacity' => 1]);
+        $booking = app(\App\Services\BookingManager::class)->create($employee->id, $slot->id);
 
         Livewire::actingAs($admin, 'admin')
             ->test(ViewBooking::class, ['record' => $booking->getRouteKey()])
-            ->callAction('moveBooking', data: ['time_slot_id' => $newSlot->id]);
-
-        $booking->refresh();
-        $this->assertSame($newSlot->id, $booking->time_slot_id);
-        $this->assertSame('available', $oldSlot->refresh()->status);
-        $this->assertSame('booked', $newSlot->refresh()->status);
+            ->assertActionHasUrl('moveBooking', \App\Filament\Pages\Kalender::getUrl(['verschieben' => $booking->id]));
     }
 
     public function test_admin_can_cancel_a_booking_and_free_the_slot(): void

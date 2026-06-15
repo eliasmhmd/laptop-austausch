@@ -65,6 +65,41 @@ class KalenderPageTest extends TestCase
             ->assertActionHidden('createBooking', arguments: ['timeSlotId' => $slot->id]);
     }
 
+    public function test_clicking_a_slot_in_move_mode_moves_the_booking(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $employee = Employee::factory()->create();
+        $oldSlot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0]);
+        $newSlot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0]);
+
+        $booking = app(\App\Services\BookingManager::class)->create($employee->id, $oldSlot->id);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(Kalender::class, ['verschieben' => $booking->id])
+            ->callAction('verschieben', arguments: ['timeSlotId' => $newSlot->id])
+            ->assertHasNoActionErrors();
+
+        $booking->refresh();
+        $this->assertSame($newSlot->id, $booking->time_slot_id);
+        $this->assertSame('available', $oldSlot->refresh()->status);
+        $this->assertSame('booked', $newSlot->refresh()->status);
+    }
+
+    public function test_move_mode_remembers_the_booking_and_can_be_cancelled(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $booking = Booking::factory()->create(['status' => 'confirmed']);
+
+        $component = Livewire::actingAs($admin, 'admin')
+            ->test(Kalender::class, ['verschieben' => $booking->id]);
+
+        $this->assertSame($booking->id, $component->get('verschieben'));
+
+        $component->call('abbrechenVerschieben');
+
+        $this->assertNull($component->get('verschieben'));
+    }
+
     public function test_admin_can_purge_all_bookings_and_employees(): void
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);

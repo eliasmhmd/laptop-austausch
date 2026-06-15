@@ -32,6 +32,23 @@
         $nextKw = ($pos !== false && $pos < $weekList->count() - 1) ? $weekList[$pos + 1] : null;
     @endphp
 
+    @if ($moveBooking)
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding:.75rem 1rem;border-radius:.5rem;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">
+            <span>
+                <strong>Termin verschieben:</strong>
+                {{ trim($moveBooking->employee?->vorname.' '.$moveBooking->employee?->nachname) }}
+                @if ($moveBooking->timeSlot)
+                    (aktuell {{ \Illuminate\Support\Carbon::parse($moveBooking->timeSlot->slot_date)->format('d.m.Y') }},
+                    {{ substr($moveBooking->timeSlot->start_time, 0, 5) }} Uhr).
+                @endif
+                Bitte wählen Sie ein freies Zeitfenster.
+            </span>
+            <x-filament::button size="sm" color="gray" wire:click="abbrechenVerschieben">
+                Abbrechen
+            </x-filament::button>
+        </div>
+    @endif
+
     <x-filament::section>
         <x-slot name="heading">Kalenderwoche {{ $currentKw }}</x-slot>
 
@@ -102,6 +119,14 @@
                                                 <strong style="display:block;">{{ trim($booking->employee?->vorname.' '.$booking->employee?->nachname) }}</strong>
                                                 <span style="font-size:.72rem;opacity:.85;">{{ $statusLabels[$booking->status] ?? $booking->status }}</span>
                                             </a>
+                                        @elseif ($canManage && $moveBooking)
+                                            {{-- Verschieben-Modus: Klick verschiebt die gemerkte Buchung hierher --}}
+                                            <button
+                                                type="button"
+                                                wire:click="mountAction('verschieben', { timeSlotId: {{ $slot->id }} })"
+                                                style="height:100%;width:100%;border:0;cursor:pointer;border-radius:.5rem;background:#fde68a;color:#92400e;font-weight:600;"
+                                                title="Termin hierher verschieben"
+                                            >hierher &rarr;</button>
                                         @elseif ($canManage)
                                             {{-- Frei + buchbar (Admin) --}}
                                             <button

@@ -125,7 +125,11 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 ### Filament resources & pages (`app/Filament/`) — v4 splits each resource into `*Resource.php` + `Tables/` + `Schemas/` + `Pages/`
 - **`Pages/Kalender.php`** — the panel home (`getRoutePath()` returns `/`). Week grid; create-booking
   dialog on free slots; "Slots generieren" + admin-only "Alle Buchungen & Mitarbeitenden löschen"
-  header actions. View: `resources/views/filament/pages/kalender.blade.php`.
+  header actions. **Verschieben-Modus**: a `#[Url] $verschieben` property (booking id, passed from the
+  booking detail's "Termin verschieben" button) puts the calendar in move mode — a banner names the
+  person, free slots turn amber ("hierher →"), and clicking one runs `verschiebenAction`
+  (`BookingManager::move`, with a confirmation) then exits the mode. View:
+  `resources/views/filament/pages/kalender.blade.php`.
 - **`Pages/Warteschlange.php`** ("Warteschlange") — custom table page (own nav item, badge = open
   count). The admin works through confirmed bookings one by one. Two tabs via a `$activeTab`
   Livewire property + `<x-filament::tabs>`: **Offen** (`reviewed_at` NULL) and **Bereit**
@@ -136,7 +140,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   Header actions: create backup + restore (FileUpload `.sql`, extension-checked, destructive
   modal). Blade table of backups (name/date/size) with download + delete (`wire:confirm`).
 - **Bookings** — read-only list + detail infolist. Detail page has admin actions: mark
-  no-show / sick (with reason), reset to confirmed, move, cancel, print imaging PDF.
+  no-show / sick (with reason), reset to confirmed, **move (→ redirects to the Kalender in
+  Verschieben-Modus, see above)**, cancel, print imaging PDF.
   Admin-only **bulk-delete** toolbar action (select rows → "Löschen"): frees the selected
   bookings' slots via `BookingManager::releaseSlotsForBookings` first, then deletes them.
 - **Employees** — read-only list + detail; "Mitarbeitende importieren" header action (CSV upload).

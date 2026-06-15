@@ -6,7 +6,6 @@ use App\Filament\Resources\Bookings\BookingResource;
 use App\Models\Booking;
 use App\Services\BookingManager;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -65,31 +64,16 @@ class ViewBooking extends ViewRecord
                         ->send();
                 }),
 
+            // Zum Verschieben in den Kalender wechseln: dort ist die zu
+            // verschiebende Buchung „gemerkt" und ein Klick auf ein freies
+            // Zeitfenster verschiebt sie dorthin.
             Action::make('moveBooking')
                 ->label('Termin verschieben')
                 ->icon(Heroicon::OutlinedArrowsRightLeft)
                 ->color('primary')
                 ->visible(fn (): bool => $this->canManage()
                     && $this->getRecord()->status !== 'cancelled')
-                ->schema([
-                    Select::make('time_slot_id')
-                        ->label('Neues Zeitfenster')
-                        ->options(fn (): array => BookingResource::availableSlotOptions($this->getRecord()->time_slot_id))
-                        ->searchable()
-                        ->required()
-                        ->helperText('Es werden nur aktuell freie Zeitfenster angezeigt.'),
-                ])
-                ->action(function (array $data): void {
-                    try {
-                        app(BookingManager::class)->move($this->getRecord(), (int) $data['time_slot_id']);
-                    } catch (RuntimeException $e) {
-                        Notification::make()->title($e->getMessage())->danger()->send();
-
-                        return;
-                    }
-
-                    Notification::make()->title('Termin wurde verschoben.')->success()->send();
-                }),
+                ->url(fn (): string => \App\Filament\Pages\Kalender::getUrl(['verschieben' => $this->getRecord()->getKey()])),
 
             Action::make('cancelBooking')
                 ->label('Buchung stornieren')
