@@ -4,14 +4,17 @@ namespace App\Filament\Resources\Employees\Tables;
 
 use App\Models\Employee;
 use App\Services\BookingManager;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,6 +24,10 @@ class EmployeesTable
     {
         return $table
             ->defaultSort('nachname')
+            // „hat einen Termin?“ als Unterabfrage mitladen (für Spalte + Aktion).
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withExists([
+                'bookings as has_termin' => fn (Builder $q) => $q->whereIn('status', Employee::SETTLED_BOOKING_STATUSES),
+            ]))
             ->columns([
                 TextColumn::make('kvgg_nummer')
                     ->label('KVGG-Nr.')
@@ -43,6 +50,11 @@ class EmployeesTable
                     ->label('PC-Nr.')
                     ->searchable()
                     ->toggleable(),
+                TextColumn::make('has_termin')
+                    ->label('Termin')
+                    ->badge()
+                    ->state(fn (Employee $record): string => $record->has_termin ? 'Gebucht' : 'Offen')
+                    ->color(fn (Employee $record): string => $record->has_termin ? 'success' : 'danger'),
                 TextColumn::make('bookings_count')
                     ->label('Buchungen')
                     ->counts('bookings')
@@ -62,9 +74,22 @@ class EmployeesTable
                         ->orderBy('abteilung')
                         ->pluck('abteilung', 'abteilung')
                         ->all()),
+                Filter::make('ohne_termin')
+                    ->label('Nur ohne Termin')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->ohneTermin()),
             ])
             ->recordActions([
                 ViewAction::make(),
+                // Erinnerungs-E-Mail im Mailprogramm der/des Admins öffnen
+                // (der Server selbst versendet keine Mails). Nur für Personen
+                // ohne Termin und mit hinterlegter E-Mail-Adresse.
+                Action::make('remind')
+                    ->label('Erinnern')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->color('warning')
+                    ->visible(fn (Employee $record): bool => filled($record->email) && ! $record->has_termin)
+                    ->url(fn (Employee $record): string => self::reminderMailto($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -93,5 +118,25 @@ class EmployeesTable
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
+    }
+
+    /**
+     * Baut einen mailto:-Link mit vorbefülltem Betreff und deutschem
+     * Erinnerungstext. Der Versand erfolgt über das Mailprogramm der/des
+     * Admins – der Server hat keinen Mailzugang.
+     */
+    public static function reminderMailto(Employee $employee): string
+    {
+        $subject = 'Erinnerung: Bitte Termin für den Laptop-Austausch auswählen';
+
+        $body = "Guten Tag {$employee->vorname} {$employee->nachname},\r\n\r\n"
+            .'Sie haben noch keinen Termin für den Austausch Ihres Laptops ausgewählt. '
+            ."Bitte wählen Sie zeitnah einen freien Termin im Buchungstool aus.\r\n\r\n"
+            ."Vielen Dank und freundliche Grüße\r\n"
+            .'Ihre IT-Abteilung – Kreis Groß-Gerau';
+
+        return 'mailto:'.$employee->email
+            .'?subject='.rawurlencode($subject)
+            .'&body='.rawurlencode($body);
     }
 }

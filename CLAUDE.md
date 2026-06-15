@@ -136,7 +136,11 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **Employees** — read-only list + detail; "Mitarbeitende importieren" header action (CSV upload).
   Admin-only **bulk-delete** toolbar action (select rows → "Löschen"): frees their booked slots
   via `BookingManager::releaseSlotsForEmployees` first, then deletes (cascade removes bookings,
-  configs, software links). Hidden for viewers.
+  configs, software links). Hidden for viewers. A **"Termin" badge column** (Gebucht/Offen) +
+  **"Nur ohne Termin" filter** (`Employee::scopeOhneTermin` → no confirmed/completed booking, see
+  `SETTLED_BOOKING_STATUSES`) surface who still needs to book; a per-row **"Erinnern"** action is a
+  `mailto:` link (prefilled German reminder, opens the admin's own mail client — the server sends
+  no mail), shown only for people without a termin who have an email.
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
