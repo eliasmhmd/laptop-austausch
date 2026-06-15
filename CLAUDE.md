@@ -126,6 +126,12 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **`Pages/Kalender.php`** — the panel home (`getRoutePath()` returns `/`). Week grid; create-booking
   dialog on free slots; "Slots generieren" + admin-only "Alle Buchungen & Mitarbeitenden löschen"
   header actions. View: `resources/views/filament/pages/kalender.blade.php`.
+- **`Pages/Warteschlange.php`** ("Warteschlange") — custom table page (own nav item, badge = open
+  count). The admin works through confirmed bookings one by one. Two tabs via a `$activeTab`
+  Livewire property + `<x-filament::tabs>`: **Offen** (`reviewed_at` NULL) and **Bereit**
+  (`reviewed_at` set). Row actions (admin-only): **Bestätigen** (sets `reviewed_at = now()`) and
+  **Zurück in Warteschlange** (clears it); plus **Ansehen** → BookingResource view. View:
+  `resources/views/filament/pages/warteschlange.blade.php`.
 - **`Pages/SystemBackups.php`** ("Datensicherung") — **admin-only** (`canAccess()` → isAdmin).
   Header actions: create backup + restore (FileUpload `.sql`, extension-checked, destructive
   modal). Blade table of backups (name/date/size) with download + delete (`wire:confirm`).
@@ -171,8 +177,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 
 Migrations in `database/migrations/` (created in this order):
 `admin_users`, `employees`, `time_slots`, `bookings`, `software_catalog`, `booking_software`,
-`laptop_configs`, then `add_additional_notes_to_laptop_configs_table` and
-`add_status_and_submitted_by_to_software_catalog_table`.
+`laptop_configs`, then `add_additional_notes_to_laptop_configs_table`,
+`add_status_and_submitted_by_to_software_catalog_table` and `add_reviewed_at_to_bookings_table`.
 
 - **admin_users**: id, name, email (unique), password (hashed), role (enum: admin, viewer), timestamps
 - **employees**: id, kvgg_nummer (unique, login username), vorname, nachname, email, abteilung,
@@ -180,7 +186,8 @@ Migrations in `database/migrations/` (created in this order):
 - **time_slots**: id, slot_date, start_time, end_time, calendar_week, status (enum: available,
   booked, blocked), capacity (default 1), booked_count (default 0), created_by (FK admin_users), timestamps
 - **bookings**: id, employee_id (FK), time_slot_id (FK, unique), status (enum: confirmed,
-  cancelled, completed, no_show, sick), cancellation_reason, unplanned_note, booked_at, timestamps
+  cancelled, completed, no_show, sick), cancellation_reason, unplanned_note, booked_at,
+  **reviewed_at** (nullable — Warteschlange: NULL = noch offen, gesetzt = von Admin bestätigt), timestamps
 - **software_catalog**: id, name, version, publisher, is_standard (bool, default true),
   status (enum: pending, approved — default `approved`, so existing rows stay visible),
   submitted_by (nullable FK employees, nullOnDelete — who suggested a pending entry), timestamps

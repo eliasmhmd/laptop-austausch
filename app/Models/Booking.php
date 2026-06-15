@@ -21,13 +21,23 @@ class Booking extends Model
         'cancellation_reason',
         'unplanned_note',
         'booked_at',
+        'reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'booked_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Wurde die Buchung bereits von der Verwaltung durchgegangen/bestätigt?
+     */
+    public function isReviewed(): bool
+    {
+        return $this->reviewed_at !== null;
     }
 
     /**
