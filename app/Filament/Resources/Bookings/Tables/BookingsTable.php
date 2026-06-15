@@ -2,11 +2,19 @@
 
 namespace App\Filament\Resources\Bookings\Tables;
 
+use App\Models\Booking;
+use App\Services\BookingManager;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class BookingsTable
 {
@@ -90,6 +98,32 @@ class BookingsTable
             ->recordActions([
                 ViewAction::make(),
             ])
-            ->toolbarActions([]);
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->label('Löschen')
+                        ->icon(Heroicon::Trash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Buchungen löschen')
+                        ->modalDescription('Die ausgewählten Buchungen werden unwiderruflich gelöscht. Die zugehörigen Zeitfenster werden wieder freigegeben.')
+                        ->modalSubmitActionLabel('Endgültig löschen')
+                        ->visible(fn (): bool => Auth::guard('admin')->user()?->isAdmin() ?? false)
+                        ->action(function (Collection $records): void {
+                            // Erst die Slots freigeben, dann löschen – der DB-Cascade
+                            // entfernt die Buchungen, setzt aber die Slot-Zähler nicht zurück.
+                            app(BookingManager::class)->releaseSlotsForBookings($records);
+
+                            $count = $records->count();
+                            $records->each(fn (Booking $booking) => $booking->delete());
+
+                            Notification::make()
+                                ->success()
+                                ->title($count === 1 ? '1 Buchung gelöscht' : $count.' Buchungen gelöscht')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ]);
     }
 }

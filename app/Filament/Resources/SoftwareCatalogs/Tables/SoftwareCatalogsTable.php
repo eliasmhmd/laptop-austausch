@@ -6,6 +6,8 @@ use App\Models\SoftwareCatalog;
 use App\Services\SoftwareCatalogMerger;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -17,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class SoftwareCatalogsTable
@@ -129,7 +132,29 @@ class SoftwareCatalogsTable
                     DeleteAction::make(),
                 ]),
             ])
-            ->toolbarActions([]);
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->label('Löschen')
+                        ->icon(Heroicon::Trash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Software-Einträge löschen')
+                        ->modalDescription('Die ausgewählten Katalog-Einträge werden gelöscht. Bei Buchungen, die diese Software angefordert hatten, wird die Verknüpfung entfernt.')
+                        ->modalSubmitActionLabel('Endgültig löschen')
+                        ->visible(fn (): bool => self::userIsAdmin())
+                        ->action(function (Collection $records): void {
+                            $count = $records->count();
+                            $records->each(fn (SoftwareCatalog $software) => $software->delete());
+
+                            Notification::make()
+                                ->success()
+                                ->title($count === 1 ? '1 Eintrag gelöscht' : $count.' Einträge gelöscht')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ]);
     }
 
     private static function userIsAdmin(): bool

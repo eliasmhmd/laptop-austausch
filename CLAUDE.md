@@ -35,7 +35,10 @@ Deployment (Phase 9) **done — app is running on the real server.** **135 featu
 - **Admin-Kalender as the panel home** — replaces the default Filament dashboard *and* the
   daily-load chart *and* the TimeSlots resource. A week grid (KW switcher) shows each slot
   as frei/belegt; clicking a free slot opens a create-booking dialog, clicking a booked slot
-  opens the booking. "Slots generieren" lives here as a header action.
+  opens the booking. "Slots generieren" lives here as a header action, plus an admin-only
+  **"Alle Buchungen & Mitarbeitenden löschen"** header action (resets all bookings + employees
+  for a new exchange round; frees all slots; keeps the software catalog and the slots themselves —
+  via `BookingManager::purgeAllBookingsAndEmployees`).
 - **Software-Katalog with approval workflow**: admin-managed catalog + employee-form
   autocomplete. Unknown entries an employee types are saved as **`pending`** (visible only to
   that employee + admins); admins **approve** (→ visible to all), **delete** (reject), or
@@ -99,6 +102,9 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   Also `releaseSlotsForEmployees($ids|$employees)`: frees the time slots held by those
   employees' non-cancelled bookings — called by the Employees bulk-delete **before** deleting,
   because the FK cascade removes the bookings but does NOT reset the slot `booked_count`/`status`.
+  `releaseSlotsForBookings($ids|$bookings)`: same idea for the Bookings bulk-delete.
+  `purgeAllBookingsAndEmployees()`: wipes ALL bookings + employees, frees all (non-blocked)
+  slots, keeps the software catalog + slots — backs the Kalender "Alle … löschen" button.
 - **`SlotGenerator`** — generates weekday slots (8/day: 08:00–15:00), idempotent
   (`firstOrCreate`), with a `HOLIDAYS` hook. Used by the seeder and the "Slots generieren" action.
 - **`EmployeeImporter`** — CSV import: auto-detects delimiter (`;`/`,`/tab), Windows-1252→UTF-8
@@ -118,12 +124,15 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 
 ### Filament resources & pages (`app/Filament/`) — v4 splits each resource into `*Resource.php` + `Tables/` + `Schemas/` + `Pages/`
 - **`Pages/Kalender.php`** — the panel home (`getRoutePath()` returns `/`). Week grid; create-booking
-  dialog on free slots; "Slots generieren" header action. View: `resources/views/filament/pages/kalender.blade.php`.
+  dialog on free slots; "Slots generieren" + admin-only "Alle Buchungen & Mitarbeitenden löschen"
+  header actions. View: `resources/views/filament/pages/kalender.blade.php`.
 - **`Pages/SystemBackups.php`** ("Datensicherung") — **admin-only** (`canAccess()` → isAdmin).
   Header actions: create backup + restore (FileUpload `.sql`, extension-checked, destructive
   modal). Blade table of backups (name/date/size) with download + delete (`wire:confirm`).
 - **Bookings** — read-only list + detail infolist. Detail page has admin actions: mark
   no-show / sick (with reason), reset to confirmed, move, cancel, print imaging PDF.
+  Admin-only **bulk-delete** toolbar action (select rows → "Löschen"): frees the selected
+  bookings' slots via `BookingManager::releaseSlotsForBookings` first, then deletes them.
 - **Employees** — read-only list + detail; "Mitarbeitende importieren" header action (CSV upload).
   Admin-only **bulk-delete** toolbar action (select rows → "Löschen"): frees their booked slots
   via `BookingManager::releaseSlotsForEmployees` first, then deletes (cascade removes bookings,
@@ -132,8 +141,10 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
   column/filter and admin-only **Freigeben** (approve) and **Zusammenführen** (merge) actions.
-  View page has a "Verwendet von" relation manager (`UsageRelationManager`) listing who
-  requested each software.
+  Per-row actions are grouped in an `ActionGroup` (⋮ dropdown) so the table fits; an admin-only
+  **bulk-delete** toolbar action deletes selected entries (`nullOnDelete` clears the link on any
+  bookings that referenced them). View page has a "Verwendet von" relation manager
+  (`UsageRelationManager`) listing who requested each software.
 
 ### Read-only-for-viewers pattern
 `canCreate/canEdit/canDelete/canDeleteAny` → `isAdmin()`; full-resource block via

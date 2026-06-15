@@ -177,4 +177,51 @@ class SoftwareCatalogResourceTest extends TestCase
             'software_catalog_id' => $winner->id,
         ]);
     }
+
+    public function test_admin_can_bulk_delete_catalog_entries(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $entries = SoftwareCatalog::factory()->count(3)->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->callTableBulkAction('delete', $entries);
+
+        foreach ($entries as $entry) {
+            $this->assertDatabaseMissing('software_catalog', ['id' => $entry->id]);
+        }
+    }
+
+    public function test_bulk_delete_nulls_the_link_on_bookings(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $software = SoftwareCatalog::factory()->create();
+        $booking = Booking::factory()->create();
+        $link = BookingSoftware::create([
+            'booking_id' => $booking->id,
+            'software_catalog_id' => $software->id,
+            'is_custom' => false,
+        ]);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->callTableBulkAction('delete', collect([$software]));
+
+        $this->assertDatabaseMissing('software_catalog', ['id' => $software->id]);
+        // Die Verknüpfung bleibt bestehen, zeigt aber auf NULL (nullOnDelete).
+        $this->assertDatabaseHas('booking_software', [
+            'id' => $link->id,
+            'software_catalog_id' => null,
+        ]);
+    }
+
+    public function test_viewer_cannot_use_the_bulk_delete_action(): void
+    {
+        $viewer = AdminUser::factory()->create(['role' => 'viewer']);
+        SoftwareCatalog::factory()->create();
+
+        Livewire::actingAs($viewer, 'admin')
+            ->test(ListSoftwareCatalogs::class)
+            ->assertTableBulkActionHidden('delete');
+    }
 }

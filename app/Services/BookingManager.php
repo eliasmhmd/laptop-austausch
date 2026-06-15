@@ -156,6 +156,75 @@ class BookingManager
     }
 
     /**
+     * Gibt die von diesen Buchungen belegten Zeitfenster wieder frei – nötig VOR
+     * dem Löschen einzelner Buchungen (der DB-Cascade entfernt die Buchung, setzt
+     * aber den Slot-Zähler/-Status nicht zurück). Stornierte Buchungen werden
+     * übersprungen, da deren Fenster bereits frei sind.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Booking>|array<int, int>  $bookings
+     */
+    public function releaseSlotsForBookings(iterable $bookings): void
+    {
+        $ids = collect($bookings)
+            ->map(fn ($b) => $b instanceof Booking ? $b->getKey() : $b)
+            ->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($ids): void {
+            $slotIds = Booking::query()
+                ->whereIn('id', $ids)
+                ->where('status', '!=', 'cancelled')
+                ->pluck('time_slot_id');
+
+            TimeSlot::query()
+                ->whereIn('id', $slotIds)
+                ->lockForUpdate()
+                ->get()
+                ->each(fn (TimeSlot $slot) => $this->free($slot));
+        });
+    }
+
+    /**
+     * Setzt die Daten für einen neuen Austausch-Durchlauf zurück: löscht ALLE
+     * Buchungen und ALLE Mitarbeitenden und gibt sämtliche Zeitfenster wieder
+     * frei. Der Software-Katalog und die generierten Zeitfenster bleiben erhalten.
+     *
+     * @return array{bookings: int, employees: int} Anzahl gelöschter Datensätze
+     */
+    public function purgeAllBookingsAndEmployees(): array
+    {
+        return DB::transaction(function (): array {
+            $counts = [
+                'bookings' => Booking::count(),
+                'employees' => Employee::count(),
+            ];
+
+            // Buchungen zuerst: der DB-Cascade entfernt Software-Verknüpfungen
+            // (booking_software) und Geräte-Konfigurationen (laptop_configs).
+            Booking::query()->delete();
+
+            // Mitarbeitende löschen. submitted_by im Software-Katalog wird dabei
+            // per nullOnDelete auf NULL gesetzt – die Katalog-Einträge bleiben.
+            Employee::query()->delete();
+
+            // Alle Zeitfenster wieder freigeben; manuell gesperrte (blocked)
+            // bleiben gesperrt, nur ihr Zähler wird zurückgesetzt.
+            TimeSlot::query()
+                ->where('status', '!=', 'blocked')
+                ->update(['status' => 'available', 'booked_count' => 0]);
+
+            TimeSlot::query()
+                ->where('status', 'blocked')
+                ->update(['booked_count' => 0]);
+
+            return $counts;
+        });
+    }
+
+    /**
      * Zeitfenster belegen: Zähler erhöhen, bei Erreichen der Kapazität sperren.
      */
     private function occupy(TimeSlot $slot): void

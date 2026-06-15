@@ -6,6 +6,7 @@ use App\Filament\Pages\Kalender;
 use App\Models\AdminUser;
 use App\Models\Booking;
 use App\Models\Employee;
+use App\Models\SoftwareCatalog;
 use App\Models\TimeSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -62,6 +63,38 @@ class KalenderPageTest extends TestCase
         Livewire::actingAs($viewer, 'admin')
             ->test(Kalender::class, ['kw' => $slot->calendar_week])
             ->assertActionHidden('createBooking', arguments: ['timeSlotId' => $slot->id]);
+    }
+
+    public function test_admin_can_purge_all_bookings_and_employees(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $slot = TimeSlot::factory()->create(['status' => 'booked', 'booked_count' => 1]);
+        Booking::factory()->create(['time_slot_id' => $slot->id, 'status' => 'confirmed']);
+        Employee::factory()->count(2)->create();
+        $software = SoftwareCatalog::factory()->create();
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(Kalender::class)
+            ->callAction('purgeData')
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(0, Booking::count());
+        $this->assertSame(0, Employee::count());
+        // Software-Katalog bleibt erhalten …
+        $this->assertDatabaseHas('software_catalog', ['id' => $software->id]);
+        // … und das Zeitfenster ist wieder frei.
+        $slot->refresh();
+        $this->assertSame('available', $slot->status);
+        $this->assertSame(0, $slot->booked_count);
+    }
+
+    public function test_viewer_cannot_use_the_purge_action(): void
+    {
+        $viewer = AdminUser::factory()->create(['role' => 'viewer']);
+
+        Livewire::actingAs($viewer, 'admin')
+            ->test(Kalender::class)
+            ->assertActionHidden('purgeData');
     }
 
     public function test_generate_slots_action_is_admin_only(): void

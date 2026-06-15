@@ -92,6 +92,25 @@ class Kalender extends Page
                         ->body("{$result['created']} neue Slots erstellt, {$result['existing']} waren bereits vorhanden ({$result['days']} Werktage).")
                         ->send();
                 }),
+
+            Action::make('purgeData')
+                ->label('Alle Buchungen & Mitarbeitenden löschen')
+                ->icon(Heroicon::OutlinedTrash)
+                ->color('danger')
+                ->visible(fn (): bool => $this->canManage())
+                ->requiresConfirmation()
+                ->modalHeading('Alle Daten zurücksetzen')
+                ->modalDescription('Achtung: Es werden ALLE Buchungen UND ALLE Mitarbeitenden unwiderruflich gelöscht. Der Software-Katalog und die Zeitfenster bleiben erhalten; alle Zeitfenster werden wieder freigegeben. Dies eignet sich für einen neuen Austausch-Durchlauf.')
+                ->modalSubmitActionLabel('Alles löschen')
+                ->action(function (): void {
+                    $counts = app(BookingManager::class)->purgeAllBookingsAndEmployees();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Daten zurückgesetzt')
+                        ->body("{$counts['bookings']} Buchungen und {$counts['employees']} Mitarbeitende gelöscht. Der Software-Katalog blieb erhalten.")
+                        ->send();
+                }),
         ];
     }
 
