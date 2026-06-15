@@ -4,17 +4,14 @@ namespace App\Filament\Resources\Bookings\Pages;
 
 use App\Exports\BookingsExport;
 use App\Filament\Resources\Bookings\BookingResource;
-use App\Services\BookingManager;
 use App\Services\ImagingSheetExporter;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ListBookings extends ListRecords
@@ -24,37 +21,14 @@ class ListBookings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            // Buchungen werden komfortabel direkt im Kalender (Panel-Startseite)
+            // angelegt: dort auf ein freies Zeitfenster klicken. Dieser Button
+            // führt nur dorthin.
             Action::make('createBooking')
                 ->label('Neue Buchung anlegen')
                 ->icon(Heroicon::OutlinedPlus)
                 ->visible(fn (): bool => Auth::guard('admin')->user()?->isAdmin() ?? false)
-                ->schema([
-                    Select::make('employee_id')
-                        ->label('Mitarbeiter:in')
-                        ->options(fn (): array => BookingResource::employeeOptions())
-                        ->searchable()
-                        ->required(),
-                    Select::make('time_slot_id')
-                        ->label('Zeitfenster')
-                        ->options(fn (): array => BookingResource::availableSlotOptions())
-                        ->searchable()
-                        ->required()
-                        ->helperText('Es werden nur aktuell freie Zeitfenster angezeigt.'),
-                ])
-                ->action(function (array $data): void {
-                    try {
-                        app(BookingManager::class)->create(
-                            (int) $data['employee_id'],
-                            (int) $data['time_slot_id'],
-                        );
-                    } catch (RuntimeException $e) {
-                        Notification::make()->title($e->getMessage())->danger()->send();
-
-                        return;
-                    }
-
-                    Notification::make()->title('Buchung wurde angelegt.')->success()->send();
-                }),
+                ->url(fn (): string => route('filament.admin.pages.kalender')),
 
             Action::make('imagingDayPdf')
                 ->label('Imaging-Blätter (Tag)')

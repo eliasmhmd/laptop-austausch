@@ -16,26 +16,13 @@ class BookingManagementActionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_create_a_booking_from_the_list_page(): void
+    public function test_create_booking_button_links_to_the_calendar(): void
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);
-        $employee = Employee::factory()->create();
-        $slot = TimeSlot::factory()->create(['status' => 'available', 'booked_count' => 0, 'capacity' => 1]);
 
         Livewire::actingAs($admin, 'admin')
             ->test(ListBookings::class)
-            ->callAction('createBooking', data: [
-                'employee_id' => $employee->id,
-                'time_slot_id' => $slot->id,
-            ]);
-
-        $this->assertDatabaseHas('bookings', [
-            'employee_id' => $employee->id,
-            'time_slot_id' => $slot->id,
-            'status' => 'confirmed',
-        ]);
-        $slot->refresh();
-        $this->assertSame('booked', $slot->status);
+            ->assertActionHasUrl('createBooking', route('filament.admin.pages.kalender'));
     }
 
     public function test_viewer_cannot_see_the_create_action(): void
