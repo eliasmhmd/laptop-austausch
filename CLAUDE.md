@@ -70,7 +70,9 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 
 ### Two auth guards (`config/auth.php`)
 - `employee` — public side. Login = `kvgg_nummer` (username, case-insensitive) +
-  `pc_nummer` (password, exact/case-sensitive).
+  `pc_nummer` (password, case-insensitive — both compared lowercased in
+  `EmployeeAuthController`). Login is throttled: 5 wrong tries per KVGG-Nummer →
+  10-minute lockout (Laravel `RateLimiter`).
 - `admin` — Filament panel at `/admin`. `AdminUser` implements `FilamentUser`; both `admin`
   and `viewer` roles may enter, but viewers are read-only everywhere.
 

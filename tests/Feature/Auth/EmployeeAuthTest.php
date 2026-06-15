@@ -33,6 +33,22 @@ class EmployeeAuthTest extends TestCase
         $this->assertAuthenticatedAs($employee, 'employee');
     }
 
+    public function test_login_ignores_case_of_kvgg_and_pc_nummer(): void
+    {
+        $employee = Employee::factory()->create([
+            'kvgg_nummer' => 'kvgg1111',
+            'pc_nummer' => 'PC7438',
+        ]);
+
+        $response = $this->post('/login', [
+            'kvgg_nummer' => 'KVGG1111',
+            'pc_nummer' => 'pc7438',
+        ]);
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($employee, 'employee');
+    }
+
     public function test_employee_cannot_login_with_wrong_pc_nummer(): void
     {
         Employee::factory()->create([

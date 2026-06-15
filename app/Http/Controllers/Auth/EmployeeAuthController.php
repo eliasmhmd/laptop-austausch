@@ -37,6 +37,7 @@ class EmployeeAuthController extends Controller
      *
      * Die PC-Nummer liegt im Klartext vor (siehe Migration), daher vergleichen
      * wir sie direkt – zeitkonstant via hash_equals – statt über einen Hash.
+     * Beide Felder werden ohne Rücksicht auf Groß-/Kleinschreibung geprüft.
      */
     public function login(Request $request): RedirectResponse
     {
@@ -53,9 +54,14 @@ class EmployeeAuthController extends Controller
 
         $this->ensureIsNotRateLimited($request);
 
-        $employee = Employee::where('kvgg_nummer', trim($credentials['kvgg_nummer']))->first();
+        // KVGG-Nummer ohne Beachtung der Groß-/Kleinschreibung suchen.
+        $employee = Employee::whereRaw('LOWER(kvgg_nummer) = ?', [Str::lower(trim($credentials['kvgg_nummer']))])->first();
 
-        if (! $employee || ! hash_equals($employee->pc_nummer, trim($credentials['pc_nummer']))) {
+        // PC-Nummer ebenfalls case-insensitiv vergleichen (beide klein schreiben).
+        if (! $employee || ! hash_equals(
+            Str::lower($employee->pc_nummer),
+            Str::lower(trim($credentials['pc_nummer'])),
+        )) {
             // Fehlversuch zählen – nach zu vielen Versuchen wird gesperrt.
             RateLimiter::hit($this->throttleKey($request), self::LOCKOUT_SECONDS);
 
