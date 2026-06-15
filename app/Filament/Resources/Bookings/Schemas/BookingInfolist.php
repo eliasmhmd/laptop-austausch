@@ -4,9 +4,15 @@ namespace App\Filament\Resources\Bookings\Schemas;
 
 use App\Filament\Resources\Bookings\Tables\BookingsTable;
 use App\Models\Booking;
+use App\Models\BookingSoftware;
+use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Auth;
 
 class BookingInfolist
 {
@@ -65,15 +71,67 @@ class BookingInfolist
                             ->label('Software für Neuinstallation')
                             ->columnSpanFull()
                             ->state(fn (Booking $record): string => $record->software
-                                ->map(fn ($sw): string => $sw->is_custom ? $sw->custom_software_name.' (Spezial)' : ($sw->softwareCatalog?->name ?? ''))
+                                ->map(fn ($sw): string => self::softwareLabel($sw))
                                 ->filter()
                                 ->implode(', '))
-                            ->placeholder('Keine Angaben'),
+                            ->placeholder('Keine Angaben')
+                            ->hintAction(
+                                Action::make('removeSoftware')
+                                    ->label('Bearbeiten')
+                                    ->icon(Heroicon::OutlinedPencilSquare)
+                                    ->visible(fn (Booking $record): bool => self::userIsAdmin() && $record->software->isNotEmpty())
+                                    ->modalHeading('Software entfernen')
+                                    ->modalDescription('Wählen Sie die Einträge, die von dieser Buchung entfernt werden sollen.')
+                                    ->modalSubmitActionLabel('Entfernen')
+                                    ->schema([
+                                        CheckboxList::make('remove')
+                                            ->label('Zu entfernende Software')
+                                            ->options(fn (Booking $record): array => $record->software
+                                                ->mapWithKeys(fn (BookingSoftware $sw): array => [$sw->id => self::softwareLabel($sw)])
+                                                ->all())
+                                            ->required(),
+                                    ])
+                                    ->action(function (array $data, Booking $record): void {
+                                        $ids = $data['remove'] ?? [];
+
+                                        $deleted = BookingSoftware::query()
+                                            ->where('booking_id', $record->id)
+                                            ->whereIn('id', $ids)
+                                            ->delete();
+
+                                        // Relation neu laden, damit die Anzeige sofort stimmt.
+                                        $record->load('software.softwareCatalog');
+
+                                        Notification::make()
+                                            ->success()
+                                            ->title($deleted === 1 ? '1 Software entfernt' : $deleted.' Einträge entfernt')
+                                            ->send();
+                                    }),
+                            ),
                         TextEntry::make('laptopConfig.additional_notes')
                             ->label('Zusätzliche Angaben')
                             ->columnSpanFull()
                             ->placeholder('—'),
                     ]),
             ]);
+    }
+
+    /**
+     * Anzeigename eines Software-Eintrags einer Buchung – Sonderwünsche werden
+     * mit „(Spezial)“ gekennzeichnet.
+     */
+    private static function softwareLabel(BookingSoftware $sw): string
+    {
+        return $sw->is_custom
+            ? trim((string) $sw->custom_software_name).' (Spezial)'
+            : ($sw->softwareCatalog?->name ?? '');
+    }
+
+    /**
+     * Nur Admins dürfen Software aus einer Buchung entfernen.
+     */
+    private static function userIsAdmin(): bool
+    {
+        return Auth::guard('admin')->user()?->isAdmin() ?? false;
     }
 }
