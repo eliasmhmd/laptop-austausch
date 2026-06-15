@@ -94,11 +94,13 @@ class EmployeeAuthController extends Controller
     }
 
     /**
-     * Drossel-Schlüssel pro KVGG-Nummer und IP-Adresse.
+     * Drossel-Schlüssel pro KVGG-Nummer. Bewusst NICHT an die IP gebunden:
+     * Die App läuft nur im internen Netz, und so wird genau das betroffene
+     * Konto gesperrt – egal von welchem Arbeitsplatz aus getippt wird.
      */
     private function throttleKey(Request $request): string
     {
-        return Str::transliterate(Str::lower((string) $request->input('kvgg_nummer')).'|'.$request->ip());
+        return 'employee-login|'.Str::transliterate(Str::lower(trim((string) $request->input('kvgg_nummer'))));
     }
 
     /**
