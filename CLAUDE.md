@@ -14,10 +14,16 @@ change; surface design decisions and spec mismatches rather than guessing.
 
 ---
 
-## Current state (as of 2026-06-12)
+## Current state (as of 2026-06-15)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) **done — app is running on the real server.** **135 feature tests pass.**
+Deployment (Phase 9) **done — app is running on the real server.** **162 feature tests pass.**
+
+> **Pending server update (planned 2026-06-16):** the live server still runs the pre-2026-06-15
+> version. The changes below (Warteschlange, Erinnerungen, login hardening + logo, bulk-delete,
+> reordered booking flow, move-via-calendar, …) ship with the next bundle. The update **includes a
+> DB migration** (`add_reviewed_at_to_bookings_table`) — `update.sh` auto-backs up before migrating.
+> See `DEPLOY.md` → "Updates später einspielen".
 
 | Phase | Status | What shipped |
 |-------|--------|--------------|
@@ -48,6 +54,16 @@ Deployment (Phase 9) **done — app is running on the real server.** **135 featu
   delete them, and restore from an uploaded `.sql`; auto-backup before migrations in production.
 - **Zusätzliche Angaben**: optional free-text field on the laptop form, surfaced on the
   booking confirmation, the admin infolist, and the printed imaging sheet.
+- **Warteschlange (review queue)**: admin page where confirmed bookings are worked through one by
+  one and marked as confirmed/ready — two tabs (Offen / Bereit), backed by `bookings.reviewed_at`.
+- **Erinnerungen (reminders)**: admin page listing employees **without a termin**, each with a
+  `mailto:` reminder button (opens the admin's own mail client — the server sends no mail).
+- **Bulk-delete** on Buchungen and Software-Katalog; admin can also **remove individual software**
+  from a booking via a pen icon on the booking detail.
+- **Login hardening**: case-insensitive KVGG-/PC-Nummer, 5-tries→10-min lockout per KVGG-Nummer
+  (`RateLimiter`), plus the Kreis-Groß-Gerau logo + purpose text on the login page.
+- **Booking flow**: after "Termin verbindlich buchen" the employee goes straight to the software
+  form, then the confirmation page. **Termin verschieben** redirects to the Kalender in move mode.
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).

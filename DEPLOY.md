@@ -147,18 +147,56 @@ Fertig – die Mitarbeitenden können sich nun unter `http://SERVER-IP` mit
 
 ---
 
-## Updates später einspielen
+## Updates später einspielen (Bundle-Workflow)
 
-Wenn es eine neue Version gibt:
+Der Server hat **kein** Git/Composer/Node. Updates laufen daher immer über ein
+Paket, das auf dem **Entwickler-Laptop** gebaut und auf den Server übertragen
+wird. Drei Schritte:
+
+**1. Auf dem Laptop** (im Projektordner, nachdem alle Änderungen committet sind):
+
+```bash
+bash deploy/bundle.sh
+```
+
+Erzeugt `laptop-austausch-paket.tar.gz` (Code **inkl.** `vendor/` und fertig
+gebauter Assets, **ohne** `.env`). Per USB/Cloud auf den Server bringen.
+
+**2. Auf dem Server** das Paket im **Elternordner** der Installation auspacken –
+es legt sich direkt über die bestehenden Dateien:
+
+```bash
+cd /var/www
+tar -xzf laptop-austausch-paket.tar.gz    # überschreibt Code; .env + storage/ bleiben erhalten
+```
+
+**3. Update-Skript starten:**
 
 ```bash
 cd /var/www/laptop-austausch
 sudo bash deploy/update.sh
 ```
 
-Das holt den neuen Code, baut alles neu und migriert die Datenbank. **Vor jeder
-Migration im Produktivbetrieb wird automatisch eine Sicherung erstellt** (liegt
-unter `storage/app/backups/`).
+Das Skript schaltet in den Wartungsmodus, **migriert die Datenbank** und erneuert
+die Caches. `.env` und `storage/` (Backups, Daten) bleiben unangetastet.
+
+> **Vor jeder Migration im Produktivbetrieb wird automatisch eine Sicherung
+> erstellt** (unter `storage/app/backups/`). Zur Sicherheit kannst du vorher
+> zusätzlich im Admin-Panel unter **„Datensicherung"** ein Backup erstellen und
+> herunterladen.
+
+### Dieses Update (Stand 2026-06-15) enthält
+
+- Neue Admin-Seiten **Warteschlange** und **Erinnerungen**
+- Login: Groß-/Kleinschreibung egal, Sperre nach 5 Fehlversuchen, Logo + Hinweis
+- Massenlöschen (Buchungen/Software-Katalog), „Alles zurücksetzen" im Kalender
+- Geänderter Buchungsablauf (erst Software, dann Bestätigung), Verschieben über den Kalender
+- **DB-Migration `add_reviewed_at_to_bookings_table`** → läuft automatisch in Schritt 3
+  (vorher Auto-Backup). Es sind **keine** manuellen DB-Schritte nötig.
+
+Nach dem Update prüfen: Login mit Logo erscheint, im Admin-Panel sind
+„Warteschlange" und „Erinnerungen" in der Navigation, bestehende Buchungen sind
+unverändert da (sie landen zunächst im Reiter „Offen" der Warteschlange).
 
 ---
 
