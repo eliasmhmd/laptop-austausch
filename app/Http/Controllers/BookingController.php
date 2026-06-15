@@ -101,8 +101,10 @@ class BookingController extends Controller
             ]);
         }
 
-        return redirect()->route('booking.show', $booking)
-            ->with('status', 'Ihr Termin wurde erfolgreich gebucht.');
+        // Direkt im Anschluss die Software erfassen; die Bestätigungsseite
+        // („Termin gebucht") folgt nach dem Speichern des Formulars.
+        return redirect()->route('config.edit', $booking)
+            ->with('status', 'Ihr Termin wurde gebucht. Bitte erfassen Sie noch die Software Ihres aktuellen Geräts.');
     }
 
     /**

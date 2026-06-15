@@ -39,7 +39,7 @@
                     <div class="flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-slate-900">Software für das neue Gerät</h2>
                         <a href="{{ route('config.edit', $booking) }}" class="text-sm font-medium text-blue-600 hover:underline">
-                            {{ $booking->laptopConfig || $booking->software->isNotEmpty() ? 'Bearbeiten' : 'Jetzt erfassen' }}
+                            Ändern
                         </a>
                     </div>
 

@@ -38,7 +38,8 @@ class BookingTest extends TestCase
         $booking = Booking::firstWhere('employee_id', $employee->id);
 
         $this->assertNotNull($booking);
-        $response->assertRedirect(route('booking.show', $booking));
+        // Nach der Buchung direkt zur Software-Erfassung.
+        $response->assertRedirect(route('config.edit', $booking));
 
         $this->assertSame('confirmed', $booking->status);
         $this->assertSame('booked', $slot->refresh()->status);
