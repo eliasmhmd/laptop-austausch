@@ -61,6 +61,35 @@ class EmployeeAuthTest extends TestCase
         $this->assertGuest('employee');
     }
 
+    public function test_login_is_locked_after_too_many_failed_attempts(): void
+    {
+        Employee::factory()->create([
+            'kvgg_nummer' => 'KVGG-12345',
+            'pc_nummer' => 'PC-654321',
+        ]);
+
+        // Fünf Fehlversuche sind erlaubt …
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', [
+                'kvgg_nummer' => 'KVGG-12345',
+                'pc_nummer' => 'falsch',
+            ])->assertSessionHasErrors('kvgg_nummer');
+        }
+
+        // … der sechste Versuch wird gesperrt – sogar mit korrektem Passwort.
+        $response = $this->from('/login')->post('/login', [
+            'kvgg_nummer' => 'KVGG-12345',
+            'pc_nummer' => 'PC-654321',
+        ]);
+
+        $response->assertSessionHasErrors('kvgg_nummer');
+        $this->assertStringContainsString(
+            'Zu viele',
+            session('errors')->first('kvgg_nummer'),
+        );
+        $this->assertGuest('employee');
+    }
+
     public function test_dashboard_redirects_guests_to_login(): void
     {
         $this->get('/dashboard')->assertRedirect('/login');

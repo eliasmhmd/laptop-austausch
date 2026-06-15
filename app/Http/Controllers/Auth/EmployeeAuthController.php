@@ -7,11 +7,23 @@ use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EmployeeAuthController extends Controller
 {
+    /**
+     * Erlaubte Fehlversuche, bevor für {@see self::LOCKOUT_SECONDS} gesperrt wird.
+     */
+    private const MAX_ATTEMPTS = 5;
+
+    /**
+     * Sperrdauer nach zu vielen Fehlversuchen (10 Minuten).
+     */
+    private const LOCKOUT_SECONDS = 600;
+
     /**
      * Login-Formular für Mitarbeitende anzeigen.
      */
@@ -39,18 +51,54 @@ class EmployeeAuthController extends Controller
             ],
         );
 
+        $this->ensureIsNotRateLimited($request);
+
         $employee = Employee::where('kvgg_nummer', trim($credentials['kvgg_nummer']))->first();
 
         if (! $employee || ! hash_equals($employee->pc_nummer, trim($credentials['pc_nummer']))) {
+            // Fehlversuch zählen – nach zu vielen Versuchen wird gesperrt.
+            RateLimiter::hit($this->throttleKey($request), self::LOCKOUT_SECONDS);
+
             throw ValidationException::withMessages([
                 'kvgg_nummer' => 'KVGG-Nummer oder PC-Nummer ist nicht korrekt.',
             ]);
         }
 
+        // Erfolgreiche Anmeldung: Zähler zurücksetzen.
+        RateLimiter::clear($this->throttleKey($request));
+
         Auth::guard('employee')->login($employee, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    /**
+     * Bei zu vielen Fehlversuchen die Anmeldung sperren und eine deutsche
+     * Fehlermeldung mit der verbleibenden Wartezeit ausgeben.
+     */
+    private function ensureIsNotRateLimited(Request $request): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey($request), self::MAX_ATTEMPTS)) {
+            return;
+        }
+
+        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+        $minutes = (int) ceil($seconds / 60);
+
+        throw ValidationException::withMessages([
+            'kvgg_nummer' => $minutes > 1
+                ? "Zu viele fehlerhafte Anmeldeversuche. Bitte versuchen Sie es in {$minutes} Minuten erneut."
+                : 'Zu viele fehlerhafte Anmeldeversuche. Bitte versuchen Sie es in einer Minute erneut.',
+        ]);
+    }
+
+    /**
+     * Drossel-Schlüssel pro KVGG-Nummer und IP-Adresse.
+     */
+    private function throttleKey(Request $request): string
+    {
+        return Str::transliterate(Str::lower((string) $request->input('kvgg_nummer')).'|'.$request->ip());
     }
 
     /**
