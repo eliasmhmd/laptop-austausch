@@ -5,8 +5,15 @@
 @section('content')
     <div class="mx-auto max-w-md">
         <div class="rounded-xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h1 class="text-xl font-semibold text-slate-900">Anmelden</h1>
-            <p class="mt-1 text-sm text-slate-500">
+            <img src="{{ asset('images/logo-kreis-gg.png') }}" alt="Kreis Groß-Gerau"
+                class="mx-auto h-20 w-auto">
+
+            <h1 class="mt-6 text-xl font-semibold text-slate-900">Anmelden</h1>
+            <p class="mt-1 text-sm text-slate-600">
+                Hier können Sie sich anmelden, um einen Termin für den Austausch Ihres
+                Laptops zu vereinbaren.
+            </p>
+            <p class="mt-2 text-sm text-slate-500">
                 Melden Sie sich mit Ihrer KVGG-Nummer und Ihrer PC-Nummer an.
             </p>
 
