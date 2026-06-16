@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\DatabaseBackupService;
+use Filament\Tables\Table;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
@@ -26,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Deutsche Datums-/Wochentagsnamen (z. B. "Montag, 10.08.2026").
         Carbon::setLocale(config('app.locale'));
+
+        // Alle Tabellen im Admin-Panel: "Alle anzeigen" als Pagination-Option.
+        Table::configureUsing(fn (Table $table) => $table->paginationPageOptions([10, 20, 50, 'all']));
 
         $this->backupBeforeMigrations();
     }
