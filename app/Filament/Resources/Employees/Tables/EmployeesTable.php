@@ -12,6 +12,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,7 +30,10 @@ class EmployeesTable
                 TextColumn::make('nachname')
                     ->label('Name')
                     ->formatStateUsing(fn ($state, Employee $record): string => trim($record->vorname.' '.$record->nachname))
-                    ->searchable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
+                        fn (Builder $q) => $q->where('nachname', 'like', "%{$search}%")
+                                             ->orWhere('vorname', 'like', "%{$search}%")
+                    ))
                     ->sortable(),
                 TextColumn::make('email')
                     ->label('E-Mail')
