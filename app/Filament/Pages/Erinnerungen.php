@@ -41,6 +41,45 @@ class Erinnerungen extends Page implements HasTable
         return $count > 0 ? (string) $count : null;
     }
 
+    protected function getHeaderActions(): array
+    {
+        $count = Employee::query()->ohneTermin()->whereNotNull('email')->count();
+
+        return [
+            Action::make('remindAll')
+                ->label("Alle erinnern ({$count})")
+                ->icon(Heroicon::OutlinedEnvelopeOpen)
+                ->color('warning')
+                ->disabled($count === 0)
+                ->url(fn (): string => $this->allReminderMailto()),
+        ];
+    }
+
+    private function allReminderMailto(): string
+    {
+        $emails = Employee::query()
+            ->ohneTermin()
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->implode(',');
+
+        if ($emails === '') {
+            return '#';
+        }
+
+        $subject = 'Erinnerung: Bitte Termin für den Laptop-Austausch auswählen';
+
+        $body = "Guten Tag,\r\n\r\n"
+            .'Sie haben noch keinen Termin für den Austausch Ihres Laptops ausgewählt. '
+            ."Bitte wählen Sie zeitnah einen freien Termin im Buchungstool aus.\r\n\r\n"
+            ."Vielen Dank und freundliche Grüße\r\n"
+            .'Ihre IT-Abteilung – Kreis Groß-Gerau';
+
+        return 'mailto:?bcc='.rawurlencode($emails)
+            .'&subject='.rawurlencode($subject)
+            .'&body='.rawurlencode($body);
+    }
+
     public function table(Table $table): Table
     {
         return $table
