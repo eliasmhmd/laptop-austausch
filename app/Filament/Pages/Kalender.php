@@ -41,6 +41,9 @@ class Kalender extends Page
     /** Aktuell angezeigte Kalenderwoche. */
     public ?int $kw = null;
 
+    /** Mehrwochen-Modus: bis zu 10 Wochen ab $kw auf einmal anzeigen. */
+    public bool $multiWeekModus = false;
+
     /**
      * ID der zu verschiebenden Buchung (aus der Buchungsansicht übergeben).
      * Ist sie gesetzt, befindet sich der Kalender im „Verschieben"-Modus: ein
@@ -245,6 +248,46 @@ class Kalender extends Page
 
         $kw = $this->kw ?? $weeks->first();
 
+        // Mehrwochen-Modus: bis zu 10 Wochen ab der aktuellen laden.
+        if ($this->multiWeekModus) {
+            $startPos = $weeks->search($kw);
+            $selectedWeeks = $weeks->slice($startPos === false ? 0 : $startPos, 10)->values();
+
+            $weekData = [];
+            foreach ($selectedWeeks as $week) {
+                $weekSlots = TimeSlot::query()
+                    ->where('calendar_week', $week)
+                    ->with(['bookings' => fn ($q) => $q->where('status', '!=', 'cancelled')->with('employee')])
+                    ->orderBy('slot_date')
+                    ->orderBy('start_time')
+                    ->get();
+
+                $weekGrid = [];
+                foreach ($weekSlots as $slot) {
+                    $weekGrid[$slot->slot_date->format('Y-m-d')][substr($slot->start_time, 0, 5)] = $slot;
+                }
+
+                $weekData[$week] = [
+                    'days'  => $weekSlots->pluck('slot_date')->unique(fn (Carbon $d): string => $d->format('Y-m-d'))->sort()->values(),
+                    'times' => $weekSlots->map(fn (TimeSlot $s): string => substr($s->start_time, 0, 5))->unique()->sort()->values(),
+                    'grid'  => $weekGrid,
+                ];
+            }
+
+            return [
+                'weeks'          => $weeks,
+                'currentKw'      => $kw,
+                'days'           => collect(),
+                'times'          => collect(),
+                'grid'           => [],
+                'canManage'      => $this->canManage(),
+                'moveBooking'    => $this->bookingToMove(),
+                'multiWeekModus' => true,
+                'weekData'       => $weekData,
+            ];
+        }
+
+        // Einzelwochen-Modus (Standard).
         $slots = TimeSlot::query()
             ->where('calendar_week', $kw)
             ->with(['bookings' => fn ($q) => $q->where('status', '!=', 'cancelled')->with('employee')])
@@ -252,20 +295,21 @@ class Kalender extends Page
             ->orderBy('start_time')
             ->get();
 
-        // grid[YYYY-MM-DD][HH:MM] = TimeSlot
         $grid = [];
         foreach ($slots as $slot) {
             $grid[$slot->slot_date->format('Y-m-d')][substr($slot->start_time, 0, 5)] = $slot;
         }
 
         return [
-            'weeks' => $weeks,
-            'currentKw' => $kw,
-            'days' => $slots->pluck('slot_date')->unique(fn (Carbon $d): string => $d->format('Y-m-d'))->sort()->values(),
-            'times' => $slots->map(fn (TimeSlot $s): string => substr($s->start_time, 0, 5))->unique()->sort()->values(),
-            'grid' => $grid,
-            'canManage' => $this->canManage(),
-            'moveBooking' => $this->bookingToMove(),
+            'weeks'          => $weeks,
+            'currentKw'      => $kw,
+            'days'           => $slots->pluck('slot_date')->unique(fn (Carbon $d): string => $d->format('Y-m-d'))->sort()->values(),
+            'times'          => $slots->map(fn (TimeSlot $s): string => substr($s->start_time, 0, 5))->unique()->sort()->values(),
+            'grid'           => $grid,
+            'canManage'      => $this->canManage(),
+            'moveBooking'    => $this->bookingToMove(),
+            'multiWeekModus' => false,
+            'weekData'       => [],
         ];
     }
 }
