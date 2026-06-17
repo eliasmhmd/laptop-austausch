@@ -31,7 +31,9 @@ class LaptopConfigTest extends TestCase
         $this->actingAs($employee, 'employee')
             ->get(route('config.edit', $booking))
             ->assertOk()
-            ->assertSee('Benötigte Software');
+            ->assertSee('Benötigte Software')
+            ->assertSee('Softwarecenter')
+            ->assertSee('KeePass XC');
     }
 
     public function test_non_owner_cannot_open_the_config_form(): void

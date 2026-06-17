@@ -83,6 +83,23 @@
                     Geben Sie hier nur <strong>zusätzlich</strong> benötigte Programme an.
                 </p>
 
+                {{-- Hinweis: Software-Center stellt einige Programme zum Selbst-Download bereit --}}
+                <div class="mt-3 flex gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                    </svg>
+                    <span>
+                        Für alle Mitarbeiter*innen wird über das <strong>„Softwarecenter"</strong> die folgende
+                        Software zum Download bereitgestellt. Hier können Sie nach Bedarf eine Auswahl treffen
+                        und sich diese eigenständig auf Ihrem Dienst-Laptop installieren:
+                        <span class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach (['.NET 8.0', 'Adobe Reader', 'ECM_Start', 'KeePass XC', 'Notepad++', 'Paint.net', 'PDF 24'] as $sc)
+                                <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200">{{ $sc }}</span>
+                            @endforeach
+                        </span>
+                    </span>
+                </div>
+
                 {{-- Hinweis: nur tatsächlich genutzte Software angeben --}}
                 <div class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                     <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
