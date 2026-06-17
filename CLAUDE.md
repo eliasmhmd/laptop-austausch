@@ -17,12 +17,13 @@ change; surface design decisions and spec mismatches rather than guessing.
 ## Current state (as of 2026-06-15)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) **done — app is running on the real server.** **162 feature tests pass.**
+Deployment (Phase 9) **done — app is running on the real server.** **171 feature tests pass.**
 
 > **Pending server update (planned 2026-06-16):** the live server still runs the pre-2026-06-15
 > version. The changes below (Warteschlange, Erinnerungen, login hardening + logo, bulk-delete,
-> reordered booking flow, move-via-calendar, …) ship with the next bundle. The update **includes a
-> DB migration** (`add_reviewed_at_to_bookings_table`) — `update.sh` auto-backs up before migrating.
+> reordered booking flow, move-via-calendar, room/Einstellungen, …) ship with the next bundle. The
+> update **includes two DB migrations** (`add_reviewed_at_to_bookings_table`,
+> `create_settings_table`) — `update.sh` auto-backs up before migrating.
 > See `DEPLOY.md` → "Updates später einspielen".
 
 | Phase | Status | What shipped |
@@ -64,6 +65,10 @@ Deployment (Phase 9) **done — app is running on the real server.** **162 featu
   (`RateLimiter`), plus the Kreis-Groß-Gerau logo + purpose text on the login page.
 - **Booking flow**: after "Termin verbindlich buchen" the employee goes straight to the software
   form, then the confirmation page. **Termin verschieben** redirects to the Kalender in move mode.
+- **Einstellungen (Raum)**: an admin-only settings page with one global value — the **room**
+  (e.g. "Raum 345") that's the same for every termin. Stored in a `settings` key-value table via
+  the `Setting` model; shown on the employee confirmation page and used as the `LOCATION` in the
+  iCal (.ics). Falls back to "IT-Abteilung, Kreis Groß-Gerau" until a room is set.
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).
@@ -169,6 +174,11 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   see `SETTLED_BOOKING_STATUSES`). Each row has an **"Erinnern"** action: a `mailto:` link with a
   prefilled German reminder that opens the admin's own mail client (the server sends no mail).
   `Erinnerungen::reminderMailto()` builds the link. Shown only for people who have an email.
+- **`Pages/Einstellungen.php`** ("Einstellungen") — **admin-only** (`canAccess()` → isAdmin).
+  Displays the current **room** and a "Raum ändern" header action (a `->schema([TextInput])` modal
+  prefilled via `->fillForm()`) that saves `Setting::set(Setting::ROOM_KEY, …)`. The `Setting`
+  model (`get`/`set`/`room`) reads the `settings` key-value table; `Setting::room()` returns the
+  saved room or the `ROOM_FALLBACK`. Used by `booking.show` + the iCal `LOCATION`.
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
@@ -199,7 +209,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 Migrations in `database/migrations/` (created in this order):
 `admin_users`, `employees`, `time_slots`, `bookings`, `software_catalog`, `booking_software`,
 `laptop_configs`, then `add_additional_notes_to_laptop_configs_table`,
-`add_status_and_submitted_by_to_software_catalog_table` and `add_reviewed_at_to_bookings_table`.
+`add_status_and_submitted_by_to_software_catalog_table`, `add_reviewed_at_to_bookings_table`
+and `create_settings_table`.
 
 - **admin_users**: id, name, email (unique), password (hashed), role (enum: admin, viewer), timestamps
 - **employees**: id, kvgg_nummer (unique, login username), vorname, nachname, email, abteilung,
@@ -216,6 +227,9 @@ Migrations in `database/migrations/` (created in this order):
   custom_software_name (nullable), is_custom (bool, default false), timestamps
 - **laptop_configs**: id, booking_id (FK, unique), old_* hardware fields, new_* fields,
   **additional_notes** (nullable text — added later), timestamps
+- **settings**: id, key (unique), value (nullable text), timestamps — global key-value store
+  (currently just `austausch_raum`, the room shown on the confirmation page + iCal); read/written
+  via the `Setting` model.
 
 Note: new employee-form submissions link software via the resolver and no longer write
 `is_custom` rows; the column remains for legacy data and the imaging sheet's "(Spezial)" marker.

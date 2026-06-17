@@ -28,6 +28,12 @@
                     <dt class="text-slate-500">Kalenderwoche</dt>
                     <dd class="font-medium text-slate-900">KW {{ $booking->timeSlot->calendar_week }}</dd>
                 </div>
+                @if ($room)
+                    <div class="flex justify-between py-3 text-sm">
+                        <dt class="text-slate-500">Raum</dt>
+                        <dd class="font-medium text-slate-900">{{ $room }}</dd>
+                    </div>
+                @endif
                 <div class="flex justify-between py-3 text-sm">
                     <dt class="text-slate-500">Status</dt>
                     <dd><span class="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">bestätigt</span></dd>

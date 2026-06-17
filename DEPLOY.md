@@ -187,16 +187,19 @@ die Caches. `.env` und `storage/` (Backups, Daten) bleiben unangetastet.
 
 ### Dieses Update (Stand 2026-06-15) enthält
 
-- Neue Admin-Seiten **Warteschlange** und **Erinnerungen**
+- Neue Admin-Seiten **Warteschlange**, **Erinnerungen** und **Einstellungen**
+- Neue Seite **Einstellungen** → dort den **Raum** pflegen (z. B. „Raum 345"); er erscheint
+  auf der Bestätigungsseite der Mitarbeitenden und im Kalender-Eintrag (.ics)
 - Login: Groß-/Kleinschreibung egal, Sperre nach 5 Fehlversuchen, Logo + Hinweis
 - Massenlöschen (Buchungen/Software-Katalog), „Alles zurücksetzen" im Kalender
 - Geänderter Buchungsablauf (erst Software, dann Bestätigung), Verschieben über den Kalender
-- **DB-Migration `add_reviewed_at_to_bookings_table`** → läuft automatisch in Schritt 3
-  (vorher Auto-Backup). Es sind **keine** manuellen DB-Schritte nötig.
+- **DB-Migrationen `add_reviewed_at_to_bookings_table` und `create_settings_table`** → laufen
+  automatisch in Schritt 3 (vorher Auto-Backup). Es sind **keine** manuellen DB-Schritte nötig.
 
-Nach dem Update prüfen: Login mit Logo erscheint, im Admin-Panel sind
-„Warteschlange" und „Erinnerungen" in der Navigation, bestehende Buchungen sind
-unverändert da (sie landen zunächst im Reiter „Offen" der Warteschlange).
+Nach dem Update prüfen: Login mit Logo erscheint, im Admin-Panel sind „Warteschlange",
+„Erinnerungen" und „Einstellungen" in der Navigation, bestehende Buchungen sind unverändert da
+(sie landen zunächst im Reiter „Offen" der Warteschlange). Anschließend unter **Einstellungen**
+den Raum eintragen.
 
 ---
 

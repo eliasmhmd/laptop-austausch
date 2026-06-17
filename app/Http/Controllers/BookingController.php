@@ -116,7 +116,10 @@ class BookingController extends Controller
 
         $booking->load('timeSlot', 'employee', 'laptopConfig', 'software.softwareCatalog');
 
-        return view('booking.show', ['booking' => $booking]);
+        return view('booking.show', [
+            'booking' => $booking,
+            'room' => \App\Models\Setting::room(),
+        ]);
     }
 
     /**
@@ -149,7 +152,7 @@ class BookingController extends Controller
             'DTEND:'.$fmt($end),
             'SUMMARY:'.$this->icalEscape('Laptop-Austausch'),
             'DESCRIPTION:'.$this->icalEscape('Austausch Ihres Laptops bei der IT-Abteilung. PC-Nummer: '.$booking->employee->pc_nummer),
-            'LOCATION:'.$this->icalEscape('IT-Abteilung, Kreis Groß-Gerau'),
+            'LOCATION:'.$this->icalEscape(\App\Models\Setting::room()),
             'STATUS:CONFIRMED',
             'END:VEVENT',
             'END:VCALENDAR',
