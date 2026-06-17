@@ -73,7 +73,7 @@ class Erinnerungen extends Page implements HasTable
             .'Sie haben noch keinen Termin für den Austausch Ihres Laptops ausgewählt. '
             ."Bitte wählen Sie zeitnah einen freien Termin im Buchungstool aus.\r\n\r\n"
             ."Vielen Dank und freundliche Grüße\r\n"
-            .'Ihre IT-Abteilung – Kreis Groß-Gerau';
+            .'Ihr IT-Center – Kreis Groß-Gerau';
 
         return 'mailto:?bcc='.rawurlencode($emails)
             .'&subject='.rawurlencode($subject)
@@ -141,7 +141,7 @@ class Erinnerungen extends Page implements HasTable
             .'Sie haben noch keinen Termin für den Austausch Ihres Laptops ausgewählt. '
             ."Bitte wählen Sie zeitnah einen freien Termin im Buchungstool aus.\r\n\r\n"
             ."Vielen Dank und freundliche Grüße\r\n"
-            .'Ihre IT-Abteilung – Kreis Groß-Gerau';
+            .'Ihr IT-Center – Kreis Groß-Gerau';
 
         return 'mailto:'.$employee->email
             .'?subject='.rawurlencode($subject)

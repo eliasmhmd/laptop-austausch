@@ -47,7 +47,7 @@
         </main>
 
         <footer class="py-6 text-center text-xs text-slate-400">
-            &copy; {{ now()->year }} Kreis Groß-Gerau &middot; IT-Abteilung
+            &copy; {{ now()->year }} Kreis Groß-Gerau &middot; IT-Center
         </footer>
     </div>
 </body>

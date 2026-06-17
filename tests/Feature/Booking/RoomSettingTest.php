@@ -56,6 +56,19 @@ class RoomSettingTest extends TestCase
             ->assertSee('Raum 345');
     }
 
+    public function test_dashboard_greets_with_full_name_and_shows_the_room(): void
+    {
+        Setting::set(Setting::ROOM_KEY, 'Raum 345');
+        $employee = Employee::factory()->create(['vorname' => 'Max', 'nachname' => 'Mustermann']);
+        $this->bookingFor($employee);
+
+        $this->actingAs($employee, 'employee')
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Willkommen, Max Mustermann!', escape: false)
+            ->assertSee('Raum 345');
+    }
+
     public function test_ical_contains_the_room_as_location(): void
     {
         Setting::set(Setting::ROOM_KEY, 'Raum 345');

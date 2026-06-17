@@ -26,7 +26,7 @@ class EmployeeFactory extends Factory
         'Sozialamt',
         'Gesundheitsamt',
         'Umweltamt',
-        'IT-Abteilung',
+        'IT-Center',
         'Schulamt',
         'Straßenverkehrsamt',
     ];

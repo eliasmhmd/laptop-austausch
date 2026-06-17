@@ -16,7 +16,7 @@ class Setting extends Model
     public const ROOM_KEY = 'austausch_raum';
 
     /** Fällt zurück, solange noch kein Raum gepflegt wurde. */
-    public const ROOM_FALLBACK = 'IT-Abteilung, Kreis Groß-Gerau';
+    public const ROOM_FALLBACK = 'IT-Center, Kreis Groß-Gerau';
 
     /** Liest einen Einstellungswert (oder den Standard, falls nicht gesetzt). */
     public static function get(string $key, ?string $default = null): ?string

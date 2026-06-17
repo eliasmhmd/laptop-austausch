@@ -5,7 +5,7 @@
 @section('content')
     <div class="mb-8">
         <h1 class="text-2xl font-semibold text-slate-900">
-            Willkommen, {{ $employee->vorname }}!
+            Willkommen, {{ trim($employee->vorname.' '.$employee->nachname) }}!
         </h1>
         <p class="mt-1 text-sm text-slate-500">
             {{ $employee->abteilung }} &middot; KVGG-Nummer {{ $employee->kvgg_nummer }}
@@ -23,6 +23,9 @@
                 {{ $activeBooking->timeSlot->slot_date->translatedFormat('l, d.m.Y') }}
                 um {{ \Illuminate\Support\Str::substr($activeBooking->timeSlot->start_time, 0, 5) }} Uhr
                 <span class="text-slate-400">(KW {{ $activeBooking->timeSlot->calendar_week }})</span>
+                @if ($room)
+                    in {{ $room }}
+                @endif
             </p>
 
             <div class="mt-4 flex flex-col gap-2 sm:flex-row">

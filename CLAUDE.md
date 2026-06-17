@@ -68,7 +68,7 @@ Deployment (Phase 9) **done — app is running on the real server.** **171 featu
 - **Einstellungen (Raum)**: an admin-only settings page with one global value — the **room**
   (e.g. "Raum 345") that's the same for every termin. Stored in a `settings` key-value table via
   the `Setting` model; shown on the employee confirmation page and used as the `LOCATION` in the
-  iCal (.ics). Falls back to "IT-Abteilung, Kreis Groß-Gerau" until a room is set.
+  iCal (.ics). Falls back to "IT-Center, Kreis Groß-Gerau" until a room is set.
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).

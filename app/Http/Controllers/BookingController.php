@@ -151,7 +151,7 @@ class BookingController extends Controller
             'DTSTART:'.$fmt($start),
             'DTEND:'.$fmt($end),
             'SUMMARY:'.$this->icalEscape('Laptop-Austausch'),
-            'DESCRIPTION:'.$this->icalEscape('Austausch Ihres Laptops bei der IT-Abteilung. PC-Nummer: '.$booking->employee->pc_nummer),
+            'DESCRIPTION:'.$this->icalEscape('Austausch Ihres Laptops beim IT-Center. PC-Nummer: '.$booking->employee->pc_nummer),
             'LOCATION:'.$this->icalEscape(\App\Models\Setting::room()),
             'STATUS:CONFIRMED',
             'END:VEVENT',

@@ -18,6 +18,7 @@ class DashboardController extends Controller
         return view('dashboard', [
             'employee' => $employee,
             'activeBooking' => $employee->activeBookings()->with('timeSlot')->first(),
+            'room' => \App\Models\Setting::room(),
         ]);
     }
 }
