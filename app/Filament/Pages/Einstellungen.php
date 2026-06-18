@@ -69,7 +69,7 @@ class Einstellungen extends Page
                 ->label('Software-Texte bearbeiten')
                 ->icon(Heroicon::OutlinedDocumentText)
                 ->modalHeading('Texte im Software-Formular')
-                ->modalDescription('Diese Texte sehen die Mitarbeitenden auf dem Formular, in dem sie ihre Software angeben. Lassen Sie ein Feld leer, wird der Standardtext angezeigt.')
+                ->modalDescription('Diese Texte sehen die Mitarbeitenden auf dem Formular, in dem sie ihre Software angeben. Die erste Zeile eines Textes wird als Überschrift (fett) dargestellt. Lassen Sie ein Feld leer, wird der Standardtext angezeigt.')
                 ->modalSubmitActionLabel('Speichern')
                 ->fillForm(fn (): array => [
                     'intro' => Setting::softwareIntro(),
@@ -79,21 +79,21 @@ class Einstellungen extends Page
                 ])
                 ->schema([
                     Textarea::make('intro')
-                        ->label('Einleitung')
-                        ->helperText('Grauer Text direkt unter der Überschrift „Benötigte Software".')
-                        ->rows(3),
+                        ->label('Standard-Software (grüner Kasten)')
+                        ->helperText('Bereits vorinstallierte Software. Erste Zeile = Überschrift.')
+                        ->rows(4),
                     Textarea::make('center_text')
-                        ->label('Softwarecenter-Hinweis')
-                        ->helperText('Text im blauen Infokasten.')
+                        ->label('Softwarecenter (blauer Kasten)')
+                        ->helperText('Hinweis auf das Softwarecenter. Erste Zeile = Überschrift; die Programme darunter pflegen Sie im nächsten Feld.')
                         ->rows(4),
                     Textarea::make('center_programs')
                         ->label('Softwarecenter-Programme')
-                        ->helperText('Ein Programm pro Zeile. Wird als Schaltflächen unter dem Hinweis angezeigt.')
+                        ->helperText('Ein Programm pro Zeile. Wird als Schaltflächen im blauen Kasten angezeigt.')
                         ->rows(7),
                     Textarea::make('warning')
-                        ->label('Warnhinweis')
-                        ->helperText('Text im gelben Hinweiskasten.')
-                        ->rows(4),
+                        ->label('Ihre Arbeitsumgebung')
+                        ->helperText('Einleitung direkt über dem Eingabefeld. Erste Zeile = Überschrift.')
+                        ->rows(5),
                 ])
                 ->action(function (array $data): void {
                     Setting::set(Setting::SOFTWARE_INTRO_KEY, trim((string) $data['intro']) ?: null);

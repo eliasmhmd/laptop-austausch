@@ -19,8 +19,9 @@ class Setting extends Model
     public const ROOM_FALLBACK = 'IT-Center, Kreis Groß-Gerau';
 
     // --- Texte im Software-Formular (von Admins editierbar) -----------------
+    // Jeder Text: erste Zeile = Überschrift (fett), Rest = Fließtext.
 
-    /** Grauer Einleitungstext unter der Überschrift „Benötigte Software". */
+    /** Grüner Kasten: bereits vorinstallierte Standard-Software. */
     public const SOFTWARE_INTRO_KEY = 'software_intro_text';
 
     /** Blauer Infokasten: Hinweis auf das Softwarecenter. */
@@ -29,14 +30,14 @@ class Setting extends Model
     /** Programmliste im Softwarecenter-Kasten (eine Zeile = ein Programm). */
     public const SOFTWARE_CENTER_PROGRAMS_KEY = 'software_center_programs';
 
-    /** Gelber Warnhinweis: nur tatsächlich genutzte Software angeben. */
+    /** Einleitung „Ihre Arbeitsumgebung" direkt über dem Eingabefeld. */
     public const SOFTWARE_WARNING_KEY = 'software_warning_text';
 
-    public const SOFTWARE_INTRO_FALLBACK = 'Standardprogramme (Office, Browser …) sind bereits auf jedem Gerät. Geben Sie hier nur zusätzlich benötigte Programme an.';
+    public const SOFTWARE_INTRO_FALLBACK = "Standard-Software – Auf jedem Laptop enthalten\n\nFolgende Software wird standardmäßig auf dem neuen Laptop installiert und muss nicht zusätzlich angegeben werden: Microsoft Office Standard (Outlook, Word, Excel, Powerpoint, OneNote), Microsoft Edge, Firefox, ProCall, VPN Forty Client, WebEx, 7zip";
 
-    public const SOFTWARE_CENTER_TEXT_FALLBACK = 'Für alle Mitarbeiter*innen wird über das „Softwarecenter" die folgende Software zum Download bereitgestellt. Hier können Sie nach Bedarf eine Auswahl treffen und sich diese eigenständig auf Ihrem Dienst-Laptop installieren:';
+    public const SOFTWARE_CENTER_TEXT_FALLBACK = "Softwarecenter – Eigenständige Installation nach Bedarf\n\nFür alle Mitarbeiter*innen wird über das „Softwarecenter“ die folgende Software zum Download bereitgestellt. Hier können Sie nach Bedarf selbst eine Auswahl treffen und sich diese eigenständig auf Ihrem Dienst-Laptop installieren:";
 
-    public const SOFTWARE_WARNING_FALLBACK = 'Bitte beachten: Geben Sie ausschließlich Software an, die Sie aktuell tatsächlich auf Ihrem Laptop besitzen und nutzen. Programme, die Sie nicht verwenden, müssen nicht neu installiert werden.';
+    public const SOFTWARE_WARNING_FALLBACK = "Ihre Arbeitsumgebung\n\nBitte geben Sie nun die spezifische Software an, die Sie an Ihrem Arbeitsplatz benötigen. Bei der Texteingabe werden Ihnen Ausfüll-Vorschläge angezeigt. Software, die Sie künftig nicht mehr benötigen, können Sie in dieser Auflistung weglassen. Diese wird dann auf Ihrem neuen Laptop nicht installiert.";
 
     /** @var list<string> */
     public const SOFTWARE_CENTER_PROGRAMS_FALLBACK = ['.NET 8.0', 'Adobe Reader', 'ECM_Start', 'KeePass XC', 'Notepad++', 'Paint.net', 'PDF 24'];
@@ -97,5 +98,24 @@ class Setting extends Model
         $items = array_map('trim', $items);
 
         return array_values(array_filter($items, static fn (string $line): bool => $line !== ''));
+    }
+
+    /**
+     * Zerlegt einen Formulartext in Überschrift (erste Zeile) und Fließtext
+     * (Rest). So lassen sich Überschrift + Text in einem einzigen Feld pflegen.
+     *
+     * @return array{0: string, 1: string} [Überschrift, Fließtext]
+     */
+    public static function splitHeading(?string $text): array
+    {
+        $text = trim((string) $text);
+
+        if ($text === '') {
+            return ['', ''];
+        }
+
+        $parts = preg_split('/\r\n|\r|\n/', $text, 2);
+
+        return [trim($parts[0]), trim($parts[1] ?? '')];
     }
 }

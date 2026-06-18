@@ -32,8 +32,11 @@ class LaptopConfigTest extends TestCase
             ->get(route('config.edit', $booking))
             ->assertOk()
             ->assertSee('Benötigte Software')
+            ->assertSee('Standard-Software – Auf jedem Laptop enthalten')
+            ->assertSee('ProCall')
             ->assertSee('Softwarecenter')
-            ->assertSee('KeePass XC');
+            ->assertSee('KeePass XC')
+            ->assertSee('Ihre Arbeitsumgebung');
     }
 
     public function test_config_form_shows_custom_software_texts_from_settings(): void
