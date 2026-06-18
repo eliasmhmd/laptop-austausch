@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Auth;
  * - der Ort (Gebäude + Raum) für den Laptop-Austausch – erscheint auf der
  *   Bestätigungsseite der Mitarbeitenden und in der Kalender-Datei (.ics);
  * - die Texte im Software-Formular (Standard-Software, Softwarecenter, jeweils
- *   mit Programmliste, sowie die Einleitung „Ihre Arbeitsumgebung").
+ *   mit Programmliste, sowie die Einleitung „Ihre Arbeitsumgebung");
+ * - der Fußzeilentext der Mitarbeitenden-Seiten.
  * Jeder Bearbeiten-Button steht im jeweiligen Abschnitt (siehe Blade-View, das
  * die beiden Aktionen per `{{ $this->...Action }}` rendert). Nur Rolle „admin".
  */
@@ -63,6 +64,34 @@ class Einstellungen extends Page
                 Notification::make()
                     ->success()
                     ->title('Ort gespeichert')
+                    ->send();
+            });
+    }
+
+    /** Bearbeiten-Button für den Abschnitt „Fußzeile" (im Blade gerendert). */
+    public function editFooterAction(): Action
+    {
+        return Action::make('editFooter')
+            ->label('Fußzeile ändern')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->modalHeading('Fußzeile der Mitarbeitenden-Seiten')
+            ->modalDescription('Dieser Text erscheint unten auf jeder Seite, direkt hinter „© <Jahr>". Das Jahr wird automatisch ergänzt.')
+            ->modalSubmitActionLabel('Speichern')
+            ->fillForm(fn (): array => [
+                'footer' => Setting::get(Setting::FOOTER_KEY),
+            ])
+            ->schema([
+                TextInput::make('footer')
+                    ->label('Fußzeilentext')
+                    ->placeholder(Setting::FOOTER_FALLBACK)
+                    ->maxLength(255),
+            ])
+            ->action(function (array $data): void {
+                Setting::set(Setting::FOOTER_KEY, trim((string) $data['footer']) ?: null);
+
+                Notification::make()
+                    ->success()
+                    ->title('Fußzeile gespeichert')
                     ->send();
             });
     }
@@ -124,6 +153,7 @@ class Einstellungen extends Page
         return [
             'room' => Setting::get(Setting::ROOM_KEY),
             'fallback' => Setting::ROOM_FALLBACK,
+            'footer' => Setting::footer(),
             'softwareIntro' => Setting::softwareIntro(),
             'standardPrograms' => Setting::standardPrograms(),
             'softwareCenterText' => Setting::softwareCenterText(),

@@ -18,6 +18,11 @@ class Setting extends Model
     /** Fällt zurück, solange noch kein Raum gepflegt wurde. */
     public const ROOM_FALLBACK = 'IT-Center, Kreis Groß-Gerau';
 
+    /** Fußzeilentext (nach „© <Jahr>") auf allen Mitarbeitenden-Seiten. */
+    public const FOOTER_KEY = 'footer_text';
+
+    public const FOOTER_FALLBACK = 'Kreis Groß-Gerau · IT-Center';
+
     // --- Texte im Software-Formular (von Admins editierbar) -----------------
     // Jeder Text: erste Zeile = Überschrift (fett), Rest = Fließtext.
 
@@ -66,6 +71,12 @@ class Setting extends Model
     public static function room(): string
     {
         return static::get(self::ROOM_KEY, self::ROOM_FALLBACK);
+    }
+
+    /** Der gepflegte Fußzeilentext, oder den Standardtext als Rückfall. */
+    public static function footer(): string
+    {
+        return static::get(self::FOOTER_KEY, self::FOOTER_FALLBACK);
     }
 
     /** Einleitungstext im Software-Formular (oder Standardtext). */

@@ -43,6 +43,17 @@ class EinstellungenPageTest extends TestCase
         $this->assertSame('Raum 345', Setting::get(Setting::ROOM_KEY));
     }
 
+    public function test_admin_can_save_the_footer(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(Einstellungen::class)
+            ->callAction('editFooter', data: ['footer' => 'Kreis Groß-Gerau · Test']);
+
+        $this->assertSame('Kreis Groß-Gerau · Test', Setting::footer());
+    }
+
     public function test_admin_can_save_the_software_texts(): void
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);

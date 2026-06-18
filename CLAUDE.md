@@ -75,6 +75,8 @@ Deployment (Phase 9) **done — app is running on the real server.** **174 featu
   **program lists** (`standardPrograms` + `softwareCenterPrograms`, one per line → rendered as
   pills in the green/blue box). Each has a `SOFTWARE_*_FALLBACK` constant on `Setting`; leaving a
   field empty re-shows the fallback. Bodies are escaped + `nl2br` (no inline bold/markup).
+  (3) The **footer text** (`footer_text`, `Setting::footer()`) shown after "© <year>" on every
+  employee page (`layouts/app.blade.php`); the year stays automatic.
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).
@@ -181,9 +183,10 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   prefilled German reminder that opens the admin's own mail client (the server sends no mail).
   `Erinnerungen::reminderMailto()` builds the link. Shown only for people who have an email.
 - **`Pages/Einstellungen.php`** ("Einstellungen") — **admin-only** (`canAccess()` → isAdmin).
-  Two **method-based actions** (`editRoomAction()` / `editSoftwareTextsAction()`) each rendered
-  **inside its own section** via the section's `afterHeader` slot (`{{ $this->editRoomAction }}`),
-  not as page header actions — so each "Bearbeiten" button sits on the box it edits. "Ort ändern"
+  Three **method-based actions** (`editRoomAction()` / `editSoftwareTextsAction()` /
+  `editFooterAction()`) each rendered **inside its own section** via the section's `afterHeader`
+  slot (`{{ $this->editRoomAction }}`), not as page header actions — so each "Bearbeiten" button
+  sits on the box it edits. "Ort ändern"
   is one `TextInput` (saves `ROOM_KEY`); "Texte bearbeiten" is five `Textarea`s (intro /
   standard_programs / center_text / center_programs / warning, saved to the matching
   `SOFTWARE_*_KEY`s; the two program lists are joined/split on newlines). The page body previews

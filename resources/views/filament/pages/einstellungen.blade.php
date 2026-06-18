@@ -54,4 +54,15 @@
             </div>
         </dl>
     </x-filament::section>
+
+    <x-filament::section>
+        <x-slot name="heading">Fußzeile</x-slot>
+        <x-slot name="description">
+            Dieser Text erscheint unten auf jeder Mitarbeitenden-Seite. Das Jahr
+            („© {{ now()->year }}") wird automatisch davorgesetzt.
+        </x-slot>
+        <x-slot name="afterHeader">{{ $this->editFooterAction }}</x-slot>
+
+        <p style="font-size: 0.875rem;">&copy; {{ now()->year }} {{ $footer }}</p>
+    </x-filament::section>
 </x-filament-panels::page>

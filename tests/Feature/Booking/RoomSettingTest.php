@@ -69,6 +69,17 @@ class RoomSettingTest extends TestCase
             ->assertSee('Raum 345');
     }
 
+    public function test_footer_text_is_shown_on_employee_pages(): void
+    {
+        Setting::set(Setting::FOOTER_KEY, 'Kreis Groß-Gerau · Mein Team');
+        $employee = Employee::factory()->create();
+
+        $this->actingAs($employee, 'employee')
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Kreis Groß-Gerau · Mein Team');
+    }
+
     public function test_ical_contains_the_room_as_location(): void
     {
         Setting::set(Setting::ROOM_KEY, 'Raum 345');
