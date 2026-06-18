@@ -53,7 +53,8 @@ class RoomSettingTest extends TestCase
             ->get(route('booking.show', $booking))
             ->assertOk()
             ->assertSee('Ort')
-            ->assertSee('Raum 345');
+            ->assertSee('Raum 345')
+            ->assertSee('notieren Sie sich diesen Termin');
     }
 
     public function test_dashboard_greets_with_full_name_and_shows_the_room(): void
