@@ -149,7 +149,7 @@
                         @keydown.arrow-down.prevent="move(1)"
                         @keydown.arrow-up.prevent="move(-1)"
                         @keydown.escape="open = false"
-                        placeholder="z. B. Adobe Acrobat Reader"
+                        placeholder="Bitte hier Software-Produkt(e) eingeben"
                         autocomplete="off"
                         class="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
 
