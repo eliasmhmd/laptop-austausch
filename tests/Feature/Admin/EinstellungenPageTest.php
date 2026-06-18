@@ -42,4 +42,23 @@ class EinstellungenPageTest extends TestCase
 
         $this->assertSame('Raum 345', Setting::get(Setting::ROOM_KEY));
     }
+
+    public function test_admin_can_save_the_software_texts(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($admin, 'admin')
+            ->test(Einstellungen::class)
+            ->callAction('editSoftwareTexts', data: [
+                'intro' => 'Neue Einleitung.',
+                'center_text' => 'Neuer Hinweis.',
+                'center_programs' => "Alpha\nBeta",
+                'warning' => 'Neue Warnung.',
+            ]);
+
+        $this->assertSame('Neue Einleitung.', Setting::softwareIntro());
+        $this->assertSame('Neuer Hinweis.', Setting::softwareCenterText());
+        $this->assertSame(['Alpha', 'Beta'], Setting::softwareCenterPrograms());
+        $this->assertSame('Neue Warnung.', Setting::softwareWarning());
+    }
 }

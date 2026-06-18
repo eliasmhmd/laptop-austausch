@@ -36,6 +36,27 @@ class LaptopConfigTest extends TestCase
             ->assertSee('KeePass XC');
     }
 
+    public function test_config_form_shows_custom_software_texts_from_settings(): void
+    {
+        \App\Models\Setting::set(\App\Models\Setting::SOFTWARE_INTRO_KEY, 'Eigener Einleitungstext.');
+        \App\Models\Setting::set(\App\Models\Setting::SOFTWARE_CENTER_TEXT_KEY, 'Eigener Softwarecenter-Hinweis.');
+        \App\Models\Setting::set(\App\Models\Setting::SOFTWARE_CENTER_PROGRAMS_KEY, "FooTool\nBarTool");
+        \App\Models\Setting::set(\App\Models\Setting::SOFTWARE_WARNING_KEY, 'Eigener Warnhinweis.');
+
+        $employee = Employee::factory()->create();
+        $booking = $this->bookingFor($employee);
+
+        $this->actingAs($employee, 'employee')
+            ->get(route('config.edit', $booking))
+            ->assertOk()
+            ->assertSee('Eigener Einleitungstext.')
+            ->assertSee('Eigener Softwarecenter-Hinweis.')
+            ->assertSee('FooTool')
+            ->assertSee('BarTool')
+            ->assertSee('Eigener Warnhinweis.')
+            ->assertDontSee('KeePass XC'); // Standardliste wurde ersetzt
+    }
+
     public function test_non_owner_cannot_open_the_config_form(): void
     {
         $booking = $this->bookingFor(Employee::factory()->create());

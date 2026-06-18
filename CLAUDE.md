@@ -17,7 +17,7 @@ change; surface design decisions and spec mismatches rather than guessing.
 ## Current state (as of 2026-06-15)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) **done — app is running on the real server.** **171 feature tests pass.**
+Deployment (Phase 9) **done — app is running on the real server.** **174 feature tests pass.**
 
 > **Pending server update (planned 2026-06-16):** the live server still runs the pre-2026-06-15
 > version. The changes below (Warteschlange, Erinnerungen, login hardening + logo, bulk-delete,
@@ -65,10 +65,15 @@ Deployment (Phase 9) **done — app is running on the real server.** **171 featu
   (`RateLimiter`), plus the Kreis-Groß-Gerau logo + purpose text on the login page.
 - **Booking flow**: after "Termin verbindlich buchen" the employee goes straight to the software
   form, then the confirmation page. **Termin verschieben** redirects to the Kalender in move mode.
-- **Einstellungen (Raum)**: an admin-only settings page with one global value — the **room**
-  (e.g. "Raum 345") that's the same for every termin. Stored in a `settings` key-value table via
-  the `Setting` model; shown on the employee confirmation page and used as the `LOCATION` in the
-  iCal (.ics). Falls back to "IT-Center, Kreis Groß-Gerau" until a room is set.
+- **Einstellungen (Ort + Software-Texte)**: an admin-only settings page. (1) The **Ort** (label
+  was "Raum"; renamed because it now holds building + room, e.g. "Gebäude B, Raum 345") — same for
+  every termin, stored under `austausch_raum`, shown on the employee confirmation page + dashboard
+  and used as the `LOCATION` in the iCal (.ics); falls back to "IT-Center, Kreis Groß-Gerau".
+  (2) The **four editable texts of the employee software form** (`config/edit.blade.php`):
+  intro, the blue Softwarecenter hint, its **program list** (one per line → rendered as pills),
+  and the amber warning. Each has a `SOFTWARE_*_FALLBACK` constant on `Setting`; leaving a field
+  empty re-shows the fallback. Editable plain text (escaped + `nl2br`) — so the previous **bold**
+  emphasis in those texts is gone.
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).
@@ -175,10 +180,14 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   prefilled German reminder that opens the admin's own mail client (the server sends no mail).
   `Erinnerungen::reminderMailto()` builds the link. Shown only for people who have an email.
 - **`Pages/Einstellungen.php`** ("Einstellungen") — **admin-only** (`canAccess()` → isAdmin).
-  Displays the current **room** and a "Raum ändern" header action (a `->schema([TextInput])` modal
-  prefilled via `->fillForm()`) that saves `Setting::set(Setting::ROOM_KEY, …)`. The `Setting`
-  model (`get`/`set`/`room`) reads the `settings` key-value table; `Setting::room()` returns the
-  saved room or the `ROOM_FALLBACK`. Used by `booking.show` + the iCal `LOCATION`.
+  Two header actions, each a modal: **"Ort ändern"** (one `TextInput`, saves `ROOM_KEY`) and
+  **"Software-Texte bearbeiten"** (four `Textarea`s: intro / center_text / center_programs /
+  warning, saved to the matching `SOFTWARE_*_KEY`s; `center_programs` is joined/split on
+  newlines). The page body previews the current Ort + the four texts (program list as pills).
+  The `Setting` model (`get`/`set`/`room`/`softwareIntro`/`softwareCenterText`/
+  `softwareCenterPrograms`/`softwareWarning`) reads the `settings` key-value table and falls back
+  to the `*_FALLBACK` constants. Consumed by `booking.show`, the dashboard, the iCal `LOCATION`,
+  and `LaptopConfigController::edit` (→ `config/edit.blade.php`).
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
@@ -228,7 +237,9 @@ and `create_settings_table`.
 - **laptop_configs**: id, booking_id (FK, unique), old_* hardware fields, new_* fields,
   **additional_notes** (nullable text — added later), timestamps
 - **settings**: id, key (unique), value (nullable text), timestamps — global key-value store
-  (currently just `austausch_raum`, the room shown on the confirmation page + iCal); read/written
+  (`austausch_raum` = the Ort on the confirmation page + iCal, plus `software_intro_text`,
+  `software_center_text`, `software_center_programs`, `software_warning_text` = the editable
+  software-form texts); read/written
   via the `Setting` model.
 
 Note: new employee-form submissions link software via the resolver and no longer write

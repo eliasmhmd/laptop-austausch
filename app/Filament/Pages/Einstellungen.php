@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -12,9 +13,11 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Allgemeine Einstellungen, die für alle Mitarbeitenden gelten. Aktuell wird
- * hier der Ort (Gebäude + Raum) für den Laptop-Austausch gepflegt – er erscheint
- * auf der Bestätigungsseite der Mitarbeitenden und in der Kalender-Datei (.ics).
+ * Allgemeine Einstellungen, die für alle Mitarbeitenden gelten:
+ * - der Ort (Gebäude + Raum) für den Laptop-Austausch – erscheint auf der
+ *   Bestätigungsseite der Mitarbeitenden und in der Kalender-Datei (.ics);
+ * - die Texte im Software-Formular (Einleitung, Softwarecenter-Hinweis samt
+ *   Programmliste, Warnhinweis).
  * Nur für die Rolle „admin".
  */
 class Einstellungen extends Page
@@ -61,6 +64,48 @@ class Einstellungen extends Page
                         ->title('Ort gespeichert')
                         ->send();
                 }),
+
+            Action::make('editSoftwareTexts')
+                ->label('Software-Texte bearbeiten')
+                ->icon(Heroicon::OutlinedDocumentText)
+                ->modalHeading('Texte im Software-Formular')
+                ->modalDescription('Diese Texte sehen die Mitarbeitenden auf dem Formular, in dem sie ihre Software angeben. Lassen Sie ein Feld leer, wird der Standardtext angezeigt.')
+                ->modalSubmitActionLabel('Speichern')
+                ->fillForm(fn (): array => [
+                    'intro' => Setting::softwareIntro(),
+                    'center_text' => Setting::softwareCenterText(),
+                    'center_programs' => implode("\n", Setting::softwareCenterPrograms()),
+                    'warning' => Setting::softwareWarning(),
+                ])
+                ->schema([
+                    Textarea::make('intro')
+                        ->label('Einleitung')
+                        ->helperText('Grauer Text direkt unter der Überschrift „Benötigte Software".')
+                        ->rows(3),
+                    Textarea::make('center_text')
+                        ->label('Softwarecenter-Hinweis')
+                        ->helperText('Text im blauen Infokasten.')
+                        ->rows(4),
+                    Textarea::make('center_programs')
+                        ->label('Softwarecenter-Programme')
+                        ->helperText('Ein Programm pro Zeile. Wird als Schaltflächen unter dem Hinweis angezeigt.')
+                        ->rows(7),
+                    Textarea::make('warning')
+                        ->label('Warnhinweis')
+                        ->helperText('Text im gelben Hinweiskasten.')
+                        ->rows(4),
+                ])
+                ->action(function (array $data): void {
+                    Setting::set(Setting::SOFTWARE_INTRO_KEY, trim((string) $data['intro']) ?: null);
+                    Setting::set(Setting::SOFTWARE_CENTER_TEXT_KEY, trim((string) $data['center_text']) ?: null);
+                    Setting::set(Setting::SOFTWARE_CENTER_PROGRAMS_KEY, trim((string) $data['center_programs']) ?: null);
+                    Setting::set(Setting::SOFTWARE_WARNING_KEY, trim((string) $data['warning']) ?: null);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Texte gespeichert')
+                        ->send();
+                }),
         ];
     }
 
@@ -69,6 +114,10 @@ class Einstellungen extends Page
         return [
             'room' => Setting::get(Setting::ROOM_KEY),
             'fallback' => Setting::ROOM_FALLBACK,
+            'softwareIntro' => Setting::softwareIntro(),
+            'softwareCenterText' => Setting::softwareCenterText(),
+            'softwareCenterPrograms' => Setting::softwareCenterPrograms(),
+            'softwareWarning' => Setting::softwareWarning(),
         ];
     }
 }

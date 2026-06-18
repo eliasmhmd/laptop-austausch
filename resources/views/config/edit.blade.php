@@ -78,39 +78,38 @@
                     remove(i) { this.tags.splice(i, 1); }
                 }">
                 <h2 class="text-lg font-semibold text-slate-900">Benötigte Software</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                    Standardprogramme (Office, Browser …) sind bereits auf jedem Gerät.
-                    Geben Sie hier nur <strong>zusätzlich</strong> benötigte Programme an.
-                </p>
+                @if ($softwareIntro)
+                    <p class="mt-1 text-sm text-slate-500">{!! nl2br(e($softwareIntro)) !!}</p>
+                @endif
 
                 {{-- Hinweis: Software-Center stellt einige Programme zum Selbst-Download bereit --}}
-                <div class="mt-3 flex gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                    <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
-                    </svg>
-                    <span>
-                        Für alle Mitarbeiter*innen wird über das <strong>„Softwarecenter"</strong> die folgende
-                        Software zum Download bereitgestellt. Hier können Sie nach Bedarf eine Auswahl treffen
-                        und sich diese eigenständig auf Ihrem Dienst-Laptop installieren:
-                        <span class="mt-2 flex flex-wrap gap-1.5">
-                            @foreach (['.NET 8.0', 'Adobe Reader', 'ECM_Start', 'KeePass XC', 'Notepad++', 'Paint.net', 'PDF 24'] as $sc)
-                                <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200">{{ $sc }}</span>
-                            @endforeach
+                @if ($softwareCenterText || count($softwareCenterPrograms))
+                    <div class="mt-3 flex gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                        </svg>
+                        <span>
+                            @if ($softwareCenterText){!! nl2br(e($softwareCenterText)) !!}@endif
+                            @if (count($softwareCenterPrograms))
+                                <span class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($softwareCenterPrograms as $sc)
+                                        <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200">{{ $sc }}</span>
+                                    @endforeach
+                                </span>
+                            @endif
                         </span>
-                    </span>
-                </div>
+                    </div>
+                @endif
 
                 {{-- Hinweis: nur tatsächlich genutzte Software angeben --}}
-                <div class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                    </svg>
-                    <span>
-                        <strong>Bitte beachten:</strong> Geben Sie ausschließlich Software an, die Sie
-                        aktuell <strong>tatsächlich auf Ihrem Laptop besitzen und nutzen</strong>.
-                        Programme, die Sie nicht verwenden, müssen nicht neu installiert werden.
-                    </span>
-                </div>
+                @if ($softwareWarning)
+                    <div class="mt-3 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{!! nl2br(e($softwareWarning)) !!}</span>
+                    </div>
+                @endif
 
                 {{-- Ausgewählte Programme als Chips --}}
                 <div class="mt-4 flex flex-wrap gap-2">

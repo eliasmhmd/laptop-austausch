@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\BookingSoftware;
 use App\Models\LaptopConfig;
+use App\Models\Setting;
 use App\Models\SoftwareCatalog;
 use App\Services\SoftwareCatalogResolver;
 use Illuminate\Http\RedirectResponse;
@@ -62,6 +63,11 @@ class LaptopConfigController extends Controller
             'manufacturers' => self::MANUFACTURERS,
             'suggestions' => $suggestions,
             'selectedNames' => $selectedNames,
+            // Von Admins über die Einstellungen pflegbare Texte.
+            'softwareIntro' => Setting::softwareIntro(),
+            'softwareCenterText' => Setting::softwareCenterText(),
+            'softwareCenterPrograms' => Setting::softwareCenterPrograms(),
+            'softwareWarning' => Setting::softwareWarning(),
         ]);
     }
 
