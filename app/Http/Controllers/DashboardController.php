@@ -19,6 +19,9 @@ class DashboardController extends Controller
             'employee' => $employee,
             'activeBooking' => $employee->activeBookings()->with('timeSlot')->first(),
             'room' => \App\Models\Setting::room(),
+            // Vom Admin bereitgestellte Dokumente – der Download-Bereich erscheint
+            // nur, wenn überhaupt eine Datei vorhanden ist.
+            'downloads' => \App\Models\DownloadFile::query()->latest()->get(),
         ]);
     }
 }

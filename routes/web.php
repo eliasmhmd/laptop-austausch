@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\DownloadController as AdminDownloadController;
 use App\Http\Controllers\Admin\ImagingSheetController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\LaptopConfigController;
 use App\Http\Controllers\RescheduleController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,10 @@ Route::prefix('admin/exports/imaging')->name('admin.exports.imaging.')->group(fu
 Route::get('admin/backups/{filename}/download', [BackupController::class, 'download'])
     ->name('admin.backups.download');
 
+// Download bereitgestellter Dokumente im Admin-Bereich (nur Admin – Prüfung im Controller).
+Route::get('admin/downloads/{downloadFile}/download', [AdminDownloadController::class, 'download'])
+    ->name('admin.downloads.download');
+
 // Öffentlicher Bereich für Mitarbeitende (nur für nicht angemeldete Nutzer).
 Route::middleware('guest:employee')->group(function () {
     Route::get('/login', [EmployeeAuthController::class, 'showLogin'])->name('login');
@@ -34,6 +40,9 @@ Route::middleware('guest:employee')->group(function () {
 Route::middleware('auth:employee')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [EmployeeAuthController::class, 'logout'])->name('logout');
+
+    // Bereitgestellte Dokumente herunterladen (z. B. PDF-Anleitungen)
+    Route::get('/dokumente/{downloadFile}', [DownloadController::class, 'show'])->name('downloads.show');
 
     // Terminbuchung (Phase 3)
     Route::get('/kalender', [BookingController::class, 'calendar'])->name('booking.calendar');

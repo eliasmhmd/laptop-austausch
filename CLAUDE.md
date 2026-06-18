@@ -17,13 +17,13 @@ change; surface design decisions and spec mismatches rather than guessing.
 ## Current state (as of 2026-06-15)
 
 **Employee side: complete.** **Admin panel: complete.** Polish (Phase 8) done.
-Deployment (Phase 9) **done — app is running on the real server.** **174 feature tests pass.**
+Deployment (Phase 9) **done — app is running on the real server.** **188 feature tests pass.**
 
 > **Pending server update (planned 2026-06-16):** the live server still runs the pre-2026-06-15
 > version. The changes below (Warteschlange, Erinnerungen, login hardening + logo, bulk-delete,
 > reordered booking flow, move-via-calendar, room/Einstellungen, …) ship with the next bundle. The
-> update **includes two DB migrations** (`add_reviewed_at_to_bookings_table`,
-> `create_settings_table`) — `update.sh` auto-backs up before migrating.
+> update **includes three DB migrations** (`add_reviewed_at_to_bookings_table`,
+> `create_settings_table`, `create_download_files_table`) — `update.sh` auto-backs up before migrating.
 > See `DEPLOY.md` → "Updates später einspielen".
 
 | Phase | Status | What shipped |
@@ -77,6 +77,15 @@ Deployment (Phase 9) **done — app is running on the real server.** **174 featu
   field empty re-shows the fallback. Bodies are escaped + `nl2br` (no inline bold/markup).
   (3) The **footer text** (`footer_text`, `Setting::footer()`) shown after "© <year>" on every
   employee page (`layouts/app.blade.php`); the year stays automatic.
+- **Dokumente (admin file downloads)**: an admin-only Filament page (`Pages/Downloads.php`,
+  nav "Dokumente") to **upload** documents (PDF guides etc.) and **delete** them. Files live in
+  `storage/app/downloads/<uuid>.<ext>` (gitignored) with metadata in the `download_files` table
+  (`DownloadFile` model; original name kept for display/download). Upload/delete go through
+  `DownloadFileService`. Employees see a **"Dokumente & Anleitungen"** card on their dashboard
+  **only while at least one file exists** — otherwise it's hidden. Downloads are served by
+  controllers (download-by-id, no path traversal): `DownloadController@show` for employees
+  (`downloads.show`, behind `auth:employee`) and `Admin\DownloadController@download` for admins
+  (`admin.downloads.download`, manual admin check — mirrors the backup/imaging download pattern).
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).
@@ -225,8 +234,8 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
 Migrations in `database/migrations/` (created in this order):
 `admin_users`, `employees`, `time_slots`, `bookings`, `software_catalog`, `booking_software`,
 `laptop_configs`, then `add_additional_notes_to_laptop_configs_table`,
-`add_status_and_submitted_by_to_software_catalog_table`, `add_reviewed_at_to_bookings_table`
-and `create_settings_table`.
+`add_status_and_submitted_by_to_software_catalog_table`, `add_reviewed_at_to_bookings_table`,
+`create_settings_table` and `create_download_files_table`.
 
 - **admin_users**: id, name, email (unique), password (hashed), role (enum: admin, viewer), timestamps
 - **employees**: id, kvgg_nummer (unique, login username), vorname, nachname, email, abteilung,
@@ -246,8 +255,11 @@ and `create_settings_table`.
 - **settings**: id, key (unique), value (nullable text), timestamps — global key-value store
   (`austausch_raum` = the Ort on the confirmation page + iCal, plus `software_intro_text`,
   `software_standard_programs`, `software_center_text`, `software_center_programs`,
-  `software_warning_text` = the editable software-form texts); read/written
+  `software_warning_text` = the editable software-form texts, plus `footer_text`); read/written
   via the `Setting` model.
+- **download_files**: id, original_name, stored_name (unique — random uuid filename on disk),
+  mime_type (nullable), size (unsigned), uploaded_by (nullable FK admin_users, nullOnDelete),
+  timestamps. Metadata for admin-provided documents; the file is at `storage/app/downloads/<stored_name>`.
 
 Note: new employee-form submissions link software via the resolver and no longer write
 `is_custom` rows; the column remains for legacy data and the imaging sheet's "(Spezial)" marker.

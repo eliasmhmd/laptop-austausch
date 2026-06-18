@@ -193,8 +193,11 @@ die Caches. `.env` und `storage/` (Backups, Daten) bleiben unangetastet.
 - Login: Groß-/Kleinschreibung egal, Sperre nach 5 Fehlversuchen, Logo + Hinweis
 - Massenlöschen (Buchungen/Software-Katalog), „Alles zurücksetzen" im Kalender
 - Geänderter Buchungsablauf (erst Software, dann Bestätigung), Verschieben über den Kalender
-- **DB-Migrationen `add_reviewed_at_to_bookings_table` und `create_settings_table`** → laufen
-  automatisch in Schritt 3 (vorher Auto-Backup). Es sind **keine** manuellen DB-Schritte nötig.
+- Neue Admin-Seite **Dokumente**: Dateien (z. B. PDF-Anleitungen) hochladen/löschen; sie
+  erscheinen auf dem Dashboard der Mitarbeitenden zum Download (nur sobald eine Datei existiert)
+- **DB-Migrationen `add_reviewed_at_to_bookings_table`, `create_settings_table` und
+  `create_download_files_table`** → laufen automatisch in Schritt 3 (vorher Auto-Backup).
+  Es sind **keine** manuellen DB-Schritte nötig.
 
 Nach dem Update prüfen: Login mit Logo erscheint, im Admin-Panel sind „Warteschlange",
 „Erinnerungen" und „Einstellungen" in der Navigation, bestehende Buchungen sind unverändert da

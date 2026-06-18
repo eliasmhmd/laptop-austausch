@@ -65,4 +65,28 @@
             </div>
         </div>
     @endif
+
+    {{-- Vom IT-Center bereitgestellte Dokumente – nur sichtbar, wenn vorhanden. --}}
+    @if ($downloads->isNotEmpty())
+        <div class="mt-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h2 class="text-lg font-semibold text-slate-900">Dokumente &amp; Anleitungen</h2>
+            <p class="mt-1 text-sm text-slate-500">
+                Hier stellt Ihnen das IT-Center Unterlagen zum Herunterladen bereit.
+            </p>
+            <ul class="mt-4 divide-y divide-slate-100">
+                @foreach ($downloads as $file)
+                    <li class="flex items-center justify-between gap-4 py-3">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium text-slate-900">{{ $file->original_name }}</p>
+                            <p class="text-xs text-slate-400">{{ $file->sizeHuman() }}</p>
+                        </div>
+                        <a href="{{ route('downloads.show', $file) }}"
+                            class="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700">
+                            Herunterladen
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 @endsection
