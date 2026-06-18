@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Allgemeine Einstellungen, die für alle Mitarbeitenden gelten. Aktuell wird
- * hier die Raumnummer für den Laptop-Austausch gepflegt – sie erscheint auf der
- * Bestätigungsseite der Mitarbeitenden und in der Kalender-Datei (.ics).
+ * hier der Ort (Gebäude + Raum) für den Laptop-Austausch gepflegt – er erscheint
+ * auf der Bestätigungsseite der Mitarbeitenden und in der Kalender-Datei (.ics).
  * Nur für die Rolle „admin".
  */
 class Einstellungen extends Page
@@ -39,18 +39,18 @@ class Einstellungen extends Page
     {
         return [
             Action::make('editRoom')
-                ->label('Raum ändern')
+                ->label('Ort ändern')
                 ->icon(Heroicon::OutlinedPencilSquare)
-                ->modalHeading('Raum für den Laptop-Austausch')
-                ->modalDescription('Dieser Raum gilt für alle Termine und erscheint auf der Bestätigungsseite der Mitarbeitenden sowie im Kalender-Eintrag (.ics).')
+                ->modalHeading('Ort für den Laptop-Austausch')
+                ->modalDescription('Dieser Ort gilt für alle Termine und erscheint auf der Bestätigungsseite der Mitarbeitenden sowie im Kalender-Eintrag (.ics).')
                 ->modalSubmitActionLabel('Speichern')
                 ->fillForm(fn (): array => [
                     'room' => Setting::get(Setting::ROOM_KEY),
                 ])
                 ->schema([
                     TextInput::make('room')
-                        ->label('Raum')
-                        ->placeholder('z. B. Raum 345')
+                        ->label('Ort')
+                        ->placeholder('z. B. Gebäude B, Raum 345')
                         ->maxLength(255),
                 ])
                 ->action(function (array $data): void {
@@ -58,7 +58,7 @@ class Einstellungen extends Page
 
                     Notification::make()
                         ->success()
-                        ->title('Raum gespeichert')
+                        ->title('Ort gespeichert')
                         ->send();
                 }),
         ];

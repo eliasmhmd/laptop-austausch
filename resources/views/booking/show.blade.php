@@ -30,7 +30,7 @@
                 </div>
                 @if ($room)
                     <div class="flex justify-between py-3 text-sm">
-                        <dt class="text-slate-500">Raum</dt>
+                        <dt class="text-slate-500">Ort</dt>
                         <dd class="font-medium text-slate-900">{{ $room }}</dd>
                     </div>
                 @endif

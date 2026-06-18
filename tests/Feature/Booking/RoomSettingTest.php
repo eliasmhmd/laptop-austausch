@@ -52,7 +52,7 @@ class RoomSettingTest extends TestCase
         $this->actingAs($employee, 'employee')
             ->get(route('booking.show', $booking))
             ->assertOk()
-            ->assertSee('Raum')
+            ->assertSee('Ort')
             ->assertSee('Raum 345');
     }
 
