@@ -27,17 +27,23 @@ class Setting extends Model
     /** Blauer Infokasten: Hinweis auf das Softwarecenter. */
     public const SOFTWARE_CENTER_TEXT_KEY = 'software_center_text';
 
+    /** Programmliste im Standard-Software-Kasten (eine Zeile = ein Programm). */
+    public const SOFTWARE_STANDARD_PROGRAMS_KEY = 'software_standard_programs';
+
     /** Programmliste im Softwarecenter-Kasten (eine Zeile = ein Programm). */
     public const SOFTWARE_CENTER_PROGRAMS_KEY = 'software_center_programs';
 
     /** Einleitung „Ihre Arbeitsumgebung" direkt über dem Eingabefeld. */
     public const SOFTWARE_WARNING_KEY = 'software_warning_text';
 
-    public const SOFTWARE_INTRO_FALLBACK = "Standard-Software – Auf jedem Laptop enthalten\n\nFolgende Software wird standardmäßig auf dem neuen Laptop installiert und muss nicht zusätzlich angegeben werden: Microsoft Office Standard (Outlook, Word, Excel, Powerpoint, OneNote), Microsoft Edge, Firefox, ProCall, VPN Forty Client, WebEx, 7zip";
+    public const SOFTWARE_INTRO_FALLBACK = "Standard-Software – Auf jedem Laptop enthalten\n\nFolgende Software wird standardmäßig auf dem neuen Laptop installiert und muss nicht zusätzlich angegeben werden:";
 
     public const SOFTWARE_CENTER_TEXT_FALLBACK = "Softwarecenter – Eigenständige Installation nach Bedarf\n\nFür alle Mitarbeiter*innen wird über das „Softwarecenter“ die folgende Software zum Download bereitgestellt. Hier können Sie nach Bedarf selbst eine Auswahl treffen und sich diese eigenständig auf Ihrem Dienst-Laptop installieren:";
 
     public const SOFTWARE_WARNING_FALLBACK = "Ihre Arbeitsumgebung\n\nBitte geben Sie nun die spezifische Software an, die Sie an Ihrem Arbeitsplatz benötigen. Bei der Texteingabe werden Ihnen Ausfüll-Vorschläge angezeigt. Software, die Sie künftig nicht mehr benötigen, können Sie in dieser Auflistung weglassen. Diese wird dann auf Ihrem neuen Laptop nicht installiert.";
+
+    /** @var list<string> */
+    public const SOFTWARE_STANDARD_PROGRAMS_FALLBACK = ['Microsoft Office Standard (Outlook, Word, Excel, Powerpoint, OneNote)', 'Microsoft Edge', 'Firefox', 'ProCall', 'VPN Forty Client', 'WebEx', '7zip'];
 
     /** @var list<string> */
     public const SOFTWARE_CENTER_PROGRAMS_FALLBACK = ['.NET 8.0', 'Adobe Reader', 'ECM_Start', 'KeePass XC', 'Notepad++', 'Paint.net', 'PDF 24'];
@@ -81,6 +87,17 @@ class Setting extends Model
     }
 
     /**
+     * Programmliste für den Standard-Software-Kasten (eine Zeile = ein Programm),
+     * oder die Standardliste als Rückfall.
+     *
+     * @return list<string>
+     */
+    public static function standardPrograms(): array
+    {
+        return static::programList(self::SOFTWARE_STANDARD_PROGRAMS_KEY, self::SOFTWARE_STANDARD_PROGRAMS_FALLBACK);
+    }
+
+    /**
      * Programmliste für den Softwarecenter-Kasten (eine Zeile = ein Programm),
      * oder die Standardliste als Rückfall.
      *
@@ -88,10 +105,22 @@ class Setting extends Model
      */
     public static function softwareCenterPrograms(): array
     {
-        $raw = static::get(self::SOFTWARE_CENTER_PROGRAMS_KEY);
+        return static::programList(self::SOFTWARE_CENTER_PROGRAMS_KEY, self::SOFTWARE_CENTER_PROGRAMS_FALLBACK);
+    }
+
+    /**
+     * Zerlegt einen mehrzeiligen Einstellungswert in eine Liste (eine Zeile =
+     * ein Eintrag, Leerzeilen werden verworfen); Rückfall auf $fallback.
+     *
+     * @param  list<string>  $fallback
+     * @return list<string>
+     */
+    protected static function programList(string $key, array $fallback): array
+    {
+        $raw = static::get($key);
 
         if ($raw === null) {
-            return self::SOFTWARE_CENTER_PROGRAMS_FALLBACK;
+            return $fallback;
         }
 
         $items = preg_split('/\r\n|\r|\n/', $raw) ?: [];

@@ -65,6 +65,7 @@ class LaptopConfigController extends Controller
             'selectedNames' => $selectedNames,
             // Von Admins über die Einstellungen pflegbare Texte.
             'softwareIntro' => Setting::softwareIntro(),
+            'standardPrograms' => Setting::standardPrograms(),
             'softwareCenterText' => Setting::softwareCenterText(),
             'softwareCenterPrograms' => Setting::softwareCenterPrograms(),
             'softwareWarning' => Setting::softwareWarning(),

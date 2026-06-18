@@ -69,11 +69,12 @@ Deployment (Phase 9) **done — app is running on the real server.** **174 featu
   was "Raum"; renamed because it now holds building + room, e.g. "Gebäude B, Raum 345") — same for
   every termin, stored under `austausch_raum`, shown on the employee confirmation page + dashboard
   and used as the `LOCATION` in the iCal (.ics); falls back to "IT-Center, Kreis Groß-Gerau".
-  (2) The **four editable texts of the employee software form** (`config/edit.blade.php`):
-  intro, the blue Softwarecenter hint, its **program list** (one per line → rendered as pills),
-  and the amber warning. Each has a `SOFTWARE_*_FALLBACK` constant on `Setting`; leaving a field
-  empty re-shows the fallback. Editable plain text (escaped + `nl2br`) — so the previous **bold**
-  emphasis in those texts is gone.
+  (2) The **editable texts of the employee software form** (`config/edit.blade.php`): three text
+  blocks (green "Standard-Software", blue "Softwarecenter", and the "Ihre Arbeitsumgebung" lead-in)
+  — for each, the **first line is rendered as a bold heading** (`Setting::splitHeading`) — plus two
+  **program lists** (`standardPrograms` + `softwareCenterPrograms`, one per line → rendered as
+  pills in the green/blue box). Each has a `SOFTWARE_*_FALLBACK` constant on `Setting`; leaving a
+  field empty re-shows the fallback. Bodies are escaped + `nl2br` (no inline bold/markup).
 
 **Login credentials (seeded dummy data):**
 `admin@kreisgg.de` / `password` (role admin) · `viewer@kreisgg.de` / `password` (role viewer).
@@ -180,14 +181,17 @@ The original spec said Laravel 11 + Filament v3. That was wrong and was overridd
   prefilled German reminder that opens the admin's own mail client (the server sends no mail).
   `Erinnerungen::reminderMailto()` builds the link. Shown only for people who have an email.
 - **`Pages/Einstellungen.php`** ("Einstellungen") — **admin-only** (`canAccess()` → isAdmin).
-  Two header actions, each a modal: **"Ort ändern"** (one `TextInput`, saves `ROOM_KEY`) and
-  **"Software-Texte bearbeiten"** (four `Textarea`s: intro / center_text / center_programs /
-  warning, saved to the matching `SOFTWARE_*_KEY`s; `center_programs` is joined/split on
-  newlines). The page body previews the current Ort + the four texts (program list as pills).
-  The `Setting` model (`get`/`set`/`room`/`softwareIntro`/`softwareCenterText`/
-  `softwareCenterPrograms`/`softwareWarning`) reads the `settings` key-value table and falls back
-  to the `*_FALLBACK` constants. Consumed by `booking.show`, the dashboard, the iCal `LOCATION`,
-  and `LaptopConfigController::edit` (→ `config/edit.blade.php`).
+  Two **method-based actions** (`editRoomAction()` / `editSoftwareTextsAction()`) each rendered
+  **inside its own section** via the section's `afterHeader` slot (`{{ $this->editRoomAction }}`),
+  not as page header actions — so each "Bearbeiten" button sits on the box it edits. "Ort ändern"
+  is one `TextInput` (saves `ROOM_KEY`); "Texte bearbeiten" is five `Textarea`s (intro /
+  standard_programs / center_text / center_programs / warning, saved to the matching
+  `SOFTWARE_*_KEY`s; the two program lists are joined/split on newlines). The page body previews
+  the current Ort + the texts (both program lists as pills). The `Setting` model
+  (`get`/`set`/`room`/`softwareIntro`/`standardPrograms`/`softwareCenterText`/
+  `softwareCenterPrograms`/`softwareWarning`/`splitHeading`, + private `programList`) reads the
+  `settings` key-value table and falls back to the `*_FALLBACK` constants. Consumed by
+  `booking.show`, the dashboard, the iCal `LOCATION`, and `LaptopConfigController::edit`.
 - **AdminUsers** — full CRUD, **admin-only** (`canAccess()` → isAdmin; 403s viewers).
 - **SoftwareCatalogs** — CRUD (viewer read-only). List page has tabs (Alle / Wartet auf
   Freigabe / Freigegeben) + a navigation badge for the pending count; table has a status
@@ -238,8 +242,8 @@ and `create_settings_table`.
   **additional_notes** (nullable text — added later), timestamps
 - **settings**: id, key (unique), value (nullable text), timestamps — global key-value store
   (`austausch_raum` = the Ort on the confirmation page + iCal, plus `software_intro_text`,
-  `software_center_text`, `software_center_programs`, `software_warning_text` = the editable
-  software-form texts); read/written
+  `software_standard_programs`, `software_center_text`, `software_center_programs`,
+  `software_warning_text` = the editable software-form texts); read/written
   via the `Setting` model.
 
 Note: new employee-form submissions link software via the resolver and no longer write

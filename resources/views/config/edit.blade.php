@@ -81,7 +81,7 @@
 
                 {{-- Standard-Software: bereits auf jedem Gerät enthalten --}}
                 @php [$introHeading, $introBody] = \App\Models\Setting::splitHeading($softwareIntro); @endphp
-                @if ($introHeading || $introBody)
+                @if ($introHeading || $introBody || count($standardPrograms))
                     <div class="mt-3 flex gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
                         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
@@ -89,6 +89,13 @@
                         <span>
                             @if ($introHeading)<span class="font-semibold">{{ $introHeading }}</span>@endif
                             @if ($introBody)<span class="mt-1 block">{!! nl2br(e($introBody)) !!}</span>@endif
+                            @if (count($standardPrograms))
+                                <span class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($standardPrograms as $sp)
+                                        <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-200">{{ $sp }}</span>
+                                    @endforeach
+                                </span>
+                            @endif
                         </span>
                     </div>
                 @endif

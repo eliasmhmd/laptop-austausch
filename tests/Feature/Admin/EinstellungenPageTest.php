@@ -51,12 +51,14 @@ class EinstellungenPageTest extends TestCase
             ->test(Einstellungen::class)
             ->callAction('editSoftwareTexts', data: [
                 'intro' => 'Neue Einleitung.',
+                'standard_programs' => "Office\nEdge",
                 'center_text' => 'Neuer Hinweis.',
                 'center_programs' => "Alpha\nBeta",
                 'warning' => 'Neue Warnung.',
             ]);
 
         $this->assertSame('Neue Einleitung.', Setting::softwareIntro());
+        $this->assertSame(['Office', 'Edge'], Setting::standardPrograms());
         $this->assertSame('Neuer Hinweis.', Setting::softwareCenterText());
         $this->assertSame(['Alpha', 'Beta'], Setting::softwareCenterPrograms());
         $this->assertSame('Neue Warnung.', Setting::softwareWarning());
