@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benutzeranleitung – Laptop-Austausch (Mitarbeitende)</title>
+<style>
+  /* ── Basis ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:       #1e40af;
+    --blue-light: #dbeafe;
+    --blue-mid:   #3b82f6;
+    --green:      #166534;
+    --green-light:#dcfce7;
+    --amber:      #92400e;
+    --amber-light:#fef3c7;
+    --gray:       #374151;
+    --gray-light: #f9fafb;
+    --gray-mid:   #e5e7eb;
+    --text:       #111827;
+    --red:        #991b1b;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: var(--text);
+    background: #fff;
+    line-height: 1.5;
+  }
+
+  /* ── Deckblatt ─────────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    border-bottom: 6px solid var(--blue);
+  }
+  .cover-badge {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-size: 9pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    margin-bottom: 32px;
+    display: inline-block;
+  }
+  .cover h1 {
+    font-size: 36pt;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .cover .subtitle {
+    font-size: 16pt;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+  .cover .org {
+    font-size: 12pt;
+    color: var(--gray);
+    margin-bottom: 48px;
+  }
+  .cover-divider {
+    width: 80px;
+    height: 4px;
+    background: var(--blue);
+    margin: 0 auto 40px;
+    border-radius: 2px;
+  }
+  .cover .desc {
+    max-width: 480px;
+    font-size: 11pt;
+    color: var(--gray);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .cover .date {
+    font-size: 10pt;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* ── Inhaltsverzeichnis ────────────────────────────────────── */
+  .toc-page {
+    page-break-after: always;
+    padding: 40px 60px;
+  }
+  .toc-page h2 {
+    font-size: 18pt;
+    color: var(--blue);
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid var(--blue);
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin: 6px 0; }
+  .toc-list a {
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .toc-list a:hover { color: var(--blue); }
+  .toc-num {
+    color: var(--blue);
+    font-weight: bold;
+    min-width: 24px;
+  }
+  .toc-sub { padding-left: 30px; }
+  .toc-sub .toc-num { color: var(--gray); font-size: 9pt; }
+
+  /* ── Layout ───────────────────────────────────────────────── */
+  .content { max-width: 800px; margin: 0 auto; padding: 40px 60px; }
+
+  /* ── Überschriften ────────────────────────────────────────── */
+  h1.section {
+    font-size: 22pt;
+    color: var(--blue);
+    font-weight: 900;
+    margin: 48px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 4px solid var(--blue);
+    page-break-before: always;
+  }
+  h1.section:first-of-type { page-break-before: avoid; }
+
+  h2 {
+    font-size: 15pt;
+    color: var(--blue);
+    font-weight: bold;
+    margin: 32px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--gray-mid);
+  }
+  h3 {
+    font-size: 12pt;
+    color: var(--gray);
+    font-weight: bold;
+    margin: 20px 0 8px;
+  }
+
+  /* ── Absatz / Liste ───────────────────────────────────────── */
+  p { margin: 8px 0 12px; }
+  ul, ol { padding-left: 24px; margin: 8px 0 12px; }
+  li { margin: 4px 0; }
+
+  /* ── Tabellen ─────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 10pt;
+  }
+  th {
+    background: var(--blue);
+    color: #fff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: bold;
+  }
+  td { padding: 8px 12px; border: 1px solid var(--gray-mid); }
+  tr:nth-child(even) td { background: var(--gray-light); }
+
+  /* ── Info-Boxen ───────────────────────────────────────────── */
+  .box {
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    border-left: 5px solid;
+  }
+  .box-title { font-weight: bold; margin-bottom: 6px; font-size: 10pt; }
+  .box p { margin: 4px 0; font-size: 10pt; }
+  .box-blue  { background: var(--blue-light);  border-color: var(--blue);  color: #1e3a8a; }
+  .box-green { background: var(--green-light); border-color: var(--green); color: #14532d; }
+  .box-amber { background: var(--amber-light); border-color: var(--amber); color: #78350f; }
+  .box-red   { background: #fee2e2;            border-color: var(--red);   color: #7f1d1d; }
+
+  /* ── Schritt-Boxen ────────────────────────────────────────── */
+  .steps { margin: 16px 0; }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--blue);
+    color: #fff;
+    font-weight: 900;
+    font-size: 12pt;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-body {
+    background: var(--blue-light);
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 10px 14px;
+    flex: 1;
+  }
+  .step-body strong { display: block; margin-bottom: 4px; color: var(--blue); }
+  .step-body p, .step-body li { font-size: 10pt; margin: 2px 0; }
+
+  /* ── Kalender-Legende ─────────────────────────────────────── */
+  .legend { display: flex; gap: 24px; margin: 10px 0 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10pt; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green  { background: #22c55e; }
+  .dot-red    { background: #ef4444; }
+  .dot-gray   { background: #9ca3af; }
+
+  /* ── Kopf-/Fußzeile (Druck) ───────────────────────────────── */
+  @media print {
+    .cover { page-break-after: always; min-height: auto; padding: 80px 60px; }
+    .toc-page { page-break-after: always; }
+    h1.section { page-break-before: always; }
+
+    @page {
+      size: A4;
+      margin: 20mm 20mm 22mm 20mm;
+      @top-center {
+        content: "Laptop-Austausch · Benutzeranleitung für Mitarbeitende";
+        font-family: Arial, sans-serif;
+        font-size: 8pt;
+        color: #6b7280;
+      }
+      @bottom-right {
+        content: "Seite " counter(page) " von " counter(pages);
+        font-family: Arial, sans-serif;
+        font-size: 8pt;
+        color: #6b7280;
+      }
+      @bottom-left {
+        content: "Kreis Groß-Gerau · IT-Center · Juni 2026";
+        font-family: Arial, sans-serif;
+        font-size: 8pt;
+        color: #6b7280;
+      }
+    }
+
+    .no-print { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    .step { break-inside: avoid; }
+    .box  { break-inside: avoid; }
+    table { break-inside: avoid; }
+  }
+
+  /* ── Drucken-Button (nur am Bildschirm) ──────────────────── */
+  .print-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 11pt;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(30,64,175,0.35);
+    z-index: 999;
+  }
+  .print-btn:hover { background: #1d4ed8; }
+</style>
+</head>
+<body>
+
+<!-- ── Deckblatt ──────────────────────────────────────────── -->
+<div class="cover">
+  <span class="cover-badge">Kreis Groß-Gerau · IT-Center</span>
+  <h1>Laptop-Austausch</h1>
+  <p class="subtitle">Benutzeranleitung für Mitarbeitende</p>
+  <p class="org">Buchungssystem · Selbstbedienungsportal</p>
+  <div class="cover-divider"></div>
+  <p class="desc">Diese Anleitung erklärt, wie Sie als Mitarbeitende/r des Kreises Groß-Gerau einen Termin für den Laptop-Austausch buchen und Ihre Geräteangaben erfassen.</p>
+  <p class="date">Stand: Juni 2026</p>
+</div>
+
+<!-- ── Inhaltsverzeichnis ─────────────────────────────────── -->
+<div class="toc-page">
+  <h2>Inhaltsverzeichnis</h2>
+  <ul class="toc-list">
+    <li><a href="#anmelden"><span class="toc-num">1</span> Anmelden</a></li>
+    <li><a href="#dashboard"><span class="toc-num">2</span> Das Dashboard</a></li>
+    <li><a href="#buchen"><span class="toc-num">3</span> Termin buchen</a></li>
+    <li class="toc-sub"><a href="#kalender"><span class="toc-num">3.1</span> Den Kalender nutzen</a></li>
+    <li class="toc-sub"><a href="#bestaetigen"><span class="toc-num">3.2</span> Termin bestätigen</a></li>
+    <li><a href="#software"><span class="toc-num">4</span> Software-Formular ausfüllen</a></li>
+    <li class="toc-sub"><a href="#sw-geraet"><span class="toc-num">4.1</span> Abschnitt: Gerät</a></li>
+    <li class="toc-sub"><a href="#sw-liste"><span class="toc-num">4.2</span> Abschnitt: Benötigte Software</a></li>
+    <li class="toc-sub"><a href="#sw-extra"><span class="toc-num">4.3</span> Zusätzliche Angaben</a></li>
+    <li><a href="#ansehen"><span class="toc-num">5</span> Termin ansehen</a></li>
+    <li><a href="#verschieben"><span class="toc-num">6</span> Termin verschieben</a></li>
+    <li><a href="#dokumente"><span class="toc-num">7</span> Dokumente herunterladen</a></li>
+    <li><a href="#faq"><span class="toc-num">8</span> Häufige Fragen (FAQ)</a></li>
+  </ul>
+</div>
+
+<!-- ── Inhalt ─────────────────────────────────────────────── -->
+<div class="content">
+
+  <!-- 1. Anmelden -->
+  <h1 class="section" id="anmelden">1 &nbsp;Anmelden</h1>
+  <p>Rufen Sie die Adresse des Buchungssystems in Ihrem Browser auf. Sie sehen das Anmeldeformular mit dem Kreis-Groß-Gerau-Logo.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>KVGG-Nummer eingeben</strong>
+        <p>Geben Sie Ihre KVGG-Nummer ein (z.&nbsp;B. <code>kvgg1234</code>). Groß- und Kleinschreibung spielt keine Rolle.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>PC-Nummer eingeben</strong>
+        <p>Die PC-Nummer finden Sie auf dem Aufkleber an Ihrem aktuellen Laptop (z.&nbsp;B. <code>PC7438</code>). Auch hier ist Groß-/Kleinschreibung egal.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>„Anmelden" klicken</strong>
+        <p>Optional: Aktivieren Sie „Angemeldet bleiben", um die Eingabe beim nächsten Besuch zu überspringen.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-amber">
+    <div class="box-title">⚠ Anmeldung fehlgeschlagen?</div>
+    <p>Prüfen Sie, ob KVGG-Nummer und PC-Nummer korrekt eingegeben wurden.</p>
+    <p>Nach <strong>5 Fehlversuchen</strong> wird der Zugang für <strong>10 Minuten</strong> gesperrt.</p>
+    <p>Wenden Sie sich bei anhaltenden Problemen an das IT-Center.</p>
+  </div>
+
+  <!-- 2. Dashboard -->
+  <h1 class="section" id="dashboard">2 &nbsp;Das Dashboard</h1>
+  <p>Nach der Anmeldung gelangen Sie zum Dashboard. Hier sehen Sie auf einen Blick:</p>
+  <ul>
+    <li>Ihren <strong>Namen, Abteilung und KVGG-Nummer</strong></li>
+    <li>Ob Sie <strong>bereits einen Termin</strong> gebucht haben – und wenn ja: Datum, Uhrzeit, Ort</li>
+    <li>Schaltflächen zum <strong>Buchen oder Verschieben</strong> eines Termins</li>
+    <li>Vom IT-Center bereitgestellte <strong>Dokumente</strong> zum Herunterladen (falls vorhanden)</li>
+  </ul>
+
+  <div class="box box-green">
+    <div class="box-title">✓ Termin bereits gebucht?</div>
+    <p>Ihr Termin wird in einer grünen Karte mit Datum, Uhrzeit und Ort angezeigt.</p>
+    <p>Von dort können Sie den Termin ansehen oder verschieben.</p>
+  </div>
+
+  <!-- 3. Termin buchen -->
+  <h1 class="section" id="buchen">3 &nbsp;Termin buchen</h1>
+  <p>Wenn Sie noch keinen Termin haben, klicken Sie auf dem Dashboard auf <strong>„Termin buchen"</strong>.</p>
+
+  <h2 id="kalender">3.1 &nbsp;Den Kalender nutzen</h2>
+  <p>Der Buchungskalender zeigt alle verfügbaren Zeitfenster, nach Kalenderwochen gegliedert.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-green"></div> <span>Grün = verfügbar → klicken zum Buchen</span></div>
+    <div class="legend-item"><div class="dot dot-red"></div> <span>Rot = bereits belegt</span></div>
+    <div class="legend-item"><div class="dot dot-gray"></div> <span>Grau = gesperrt (z.&nbsp;B. Feiertag)</span></div>
+  </div>
+
+  <p>Über die <strong>Kalenderwoche-Schaltflächen</strong> oben können Sie gezielt eine Woche auswählen. Die Verfügbarkeit wird alle <strong>15 Sekunden</strong> automatisch aktualisiert.</p>
+
+  <h2 id="bestaetigen">3.2 &nbsp;Termin bestätigen</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Grünes Zeitfenster anklicken</strong>
+        <p>Klicken Sie auf das gewünschte freie Zeitfenster.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Daten prüfen</strong>
+        <p>Die Bestätigungsseite zeigt Datum und Uhrzeit. Prüfen Sie die Angaben.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>„Termin verbindlich buchen" klicken</strong>
+        <p>Der Termin wird sofort gebucht. Sie werden direkt zum Software-Formular weitergeleitet.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-blue">
+    <div class="box-title">ℹ Doppelbuchung nicht möglich</div>
+    <p>Pro Mitarbeitende/m kann nur ein aktiver Termin gleichzeitig bestehen.</p>
+    <p>Möchten Sie einen anderen Termin wählen, nutzen Sie „Termin verschieben".</p>
+  </div>
+
+  <!-- 4. Software-Formular -->
+  <h1 class="section" id="software">4 &nbsp;Software-Formular ausfüllen</h1>
+  <p>Das Formular erscheint direkt nach der Buchung und kann später jederzeit über <strong>„Ändern"</strong> auf der Termin-Seite bearbeitet werden. Damit das IT-Center Ihr neues Gerät korrekt einrichten kann, geben Sie bitte an, welche Software auf Ihrem aktuellen Laptop installiert ist.</p>
+
+  <h2 id="sw-geraet">4.1 &nbsp;Abschnitt: Gerät</h2>
+  <p>Ihre PC-Nummer wird automatisch übernommen. Wählen Sie optional den <strong>Hersteller</strong> Ihres aktuellen Laptops aus der Dropdown-Liste.</p>
+
+  <h2 id="sw-liste">4.2 &nbsp;Abschnitt: Benötigte Software</h2>
+
+  <table>
+    <tr><th>Bereich</th><th>Bedeutung</th></tr>
+    <tr><td><strong>Grüner Kasten</strong></td><td>Standard-Software – wird automatisch auf jedem Gerät installiert. Müssen Sie nicht extra angeben.</td></tr>
+    <tr><td><strong>Blauer Kasten</strong></td><td>Softwarecenter – Programme, die Sie selbst installieren können.</td></tr>
+    <tr><td><strong>Eingabefeld</strong></td><td>Hier tragen Sie weitere Programme ein (Vorschläge erscheinen beim Tippen).</td></tr>
+  </table>
+
+  <ul>
+    <li>Bereits gewählte Programme erscheinen als <strong>Chips</strong>. Klicken Sie auf <strong>×</strong>, um ein Programm zu entfernen.</li>
+    <li>Programme aus der Dropdown-Liste auswählen <em>oder</em> Namen eintippen und <kbd>Enter</kbd> drücken.</li>
+  </ul>
+
+  <div class="box box-blue">
+    <div class="box-title">ℹ Software nicht in der Liste?</div>
+    <p>Einfach eintippen und <kbd>Enter</kbd> drücken. Das IT-Center prüft den Eintrag und gibt ihn gegebenenfalls frei.</p>
+  </div>
+
+  <h2 id="sw-extra">4.3 &nbsp;Zusätzliche Angaben (optional)</h2>
+  <p>Sonstige Hinweise für das IT-Center, z.&nbsp;B.:</p>
+  <ul>
+    <li>Peripheriegeräte (zweiter Monitor, Dockingstation)</li>
+    <li>Besondere Einstellungen oder Konfigurationen</li>
+    <li>Sonstige Anmerkungen zum Gerät</li>
+  </ul>
+  <p>Klicken Sie abschließend auf <strong>„Speichern"</strong>, um Ihre Angaben zu übermitteln.</p>
+
+  <!-- 5. Termin ansehen -->
+  <h1 class="section" id="ansehen">5 &nbsp;Termin ansehen</h1>
+  <p>Klicken Sie auf dem Dashboard auf <strong>„Termin ansehen"</strong>. Dort finden Sie:</p>
+  <ul>
+    <li>Datum, Uhrzeit, Kalenderwoche und <strong>Ort</strong> Ihres Termins</li>
+    <li>Den aktuellen <strong>Status</strong> (bestätigt)</li>
+    <li>Ihre eingetragene Software (mit Möglichkeit zur Änderung)</li>
+    <li>Schaltflächen: Dashboard · Termin verschieben · Zum Kalender hinzufügen</li>
+  </ul>
+
+  <div class="box box-green">
+    <div class="box-title">📅 Termin in den Kalender übernehmen</div>
+    <p>Klicken Sie auf <strong>„Zum Kalender hinzufügen"</strong>, um eine <code>.ics</code>-Datei herunterzuladen.</p>
+    <p>Diese Datei können Sie in <strong>Outlook</strong>, Google Calendar oder andere Kalender-Programme importieren.</p>
+    <p><em>Das System sendet keine E-Mail-Bestätigung – bitte Termin notieren oder .ics speichern!</em></p>
+  </div>
+
+  <!-- 6. Termin verschieben -->
+  <h1 class="section" id="verschieben">6 &nbsp;Termin verschieben</h1>
+  <p>Klicken Sie auf dem Dashboard oder der Termin-Seite auf <strong>„Termin verschieben"</strong>.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Aktuellen Termin prüfen</strong>
+        <p>Ein gelber Hinweisbalken zeigt Ihren bisherigen Termin an.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Neues Zeitfenster wählen</strong>
+        <p>Wählen Sie wie beim erstmaligen Buchen ein grünes (freies) Zeitfenster aus.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Verschiebung bestätigen</strong>
+        <p>Bestätigen Sie auf der nächsten Seite. Der alte Termin wird automatisch storniert, der neue angelegt.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-amber">
+    <div class="box-title">⚠ Wichtig</div>
+    <p>Das Verschieben storniert den alten Termin <strong>sofort</strong>.</p>
+    <p>Ihre eingetragene Software und sonstigen Angaben werden automatisch auf den neuen Termin übertragen.</p>
+  </div>
+
+  <!-- 7. Dokumente -->
+  <h1 class="section" id="dokumente">7 &nbsp;Dokumente &amp; Anleitungen herunterladen</h1>
+  <p>Falls das IT-Center Unterlagen bereitgestellt hat (z.&nbsp;B. Checklisten, Handbücher), erscheint auf Ihrem Dashboard eine Karte <strong>„Dokumente &amp; Anleitungen"</strong>.</p>
+  <p>Klicken Sie auf <strong>„Herunterladen"</strong> neben der jeweiligen Datei, um diese zu speichern. Ist keine Datei hinterlegt, wird diese Karte nicht angezeigt.</p>
+
+  <!-- 8. FAQ -->
+  <h1 class="section" id="faq">8 &nbsp;Häufige Fragen (FAQ)</h1>
+
+  <h3>Ich habe meine PC-Nummer vergessen. Was tun?</h3>
+  <p>Die PC-Nummer steht auf einem Aufkleber an Ihrem Laptop (oft auf der Unterseite oder neben dem Display). Wenden Sie sich bei Fragen an das IT-Center.</p>
+
+  <h3>Kann ich meinen Termin absagen?</h3>
+  <p>Eine selbstständige Absage ist nicht vorgesehen. Bitte wenden Sie sich an das IT-Center, damit ein Administrator den Termin stornieren kann.</p>
+
+  <h3>Ich erhalte keine Bestätigungsmail.</h3>
+  <p>Das System versendet bewusst <strong>keine E-Mails</strong>. Laden Sie die <code>.ics</code>-Datei herunter, um den Termin in Ihren Kalender zu importieren, oder notieren Sie Datum und Uhrzeit.</p>
+
+  <h3>Das System zeigt „Zugang gesperrt".</h3>
+  <p>Nach 5 fehlgeschlagenen Anmeldeversuchen wird der Zugang für 10 Minuten gesperrt. Bitte warten Sie und versuchen Sie es dann erneut.</p>
+
+  <h3>Ein Zeitfenster war grün, ist jetzt aber rot.</h3>
+  <p>Der Kalender aktualisiert sich alle 15 Sekunden. Das Zeitfenster wurde in der Zwischenzeit von einer anderen Person gebucht. Bitte wählen Sie ein anderes freies Fenster.</p>
+
+  <h3>Meine Software ist nicht in der Liste.</h3>
+  <p>Tippen Sie den Namen des Programms in das Eingabefeld und drücken Sie <kbd>Enter</kbd>. Das IT-Center wird den Eintrag prüfen und ggf. freigeben.</p>
+
+</div><!-- /content -->
+
+<!-- ── Drucken-Button ──────────────────────────────────────── -->
+<button class="print-btn no-print" onclick="window.print()">🖨 Als PDF speichern</button>
+
+</body>
+</html>

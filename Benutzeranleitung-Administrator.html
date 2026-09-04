@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benutzeranleitung – Laptop-Austausch (Administrator)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:       #1e40af;
+    --blue-light: #dbeafe;
+    --green:      #166534;
+    --green-light:#dcfce7;
+    --amber:      #92400e;
+    --amber-light:#fef3c7;
+    --gray:       #374151;
+    --gray-light: #f9fafb;
+    --gray-mid:   #e5e7eb;
+    --text:       #111827;
+    --red:        #991b1b;
+    --red-light:  #fee2e2;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: var(--text);
+    background: #fff;
+    line-height: 1.5;
+  }
+
+  /* ── Deckblatt ─────────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    border-bottom: 6px solid var(--blue);
+  }
+  .cover-badge {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-size: 9pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    margin-bottom: 32px;
+    display: inline-block;
+  }
+  .cover-badge-admin {
+    background: #f3e8ff;
+    color: #6b21a8;
+    font-size: 9pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .cover h1 { font-size: 36pt; font-weight: 900; color: var(--blue); line-height: 1.1; margin-bottom: 12px; }
+  .cover .subtitle { font-size: 16pt; color: var(--gray); margin-bottom: 8px; }
+  .cover .org { font-size: 12pt; color: var(--gray); margin-bottom: 48px; }
+  .cover-divider { width: 80px; height: 4px; background: var(--blue); margin: 0 auto 40px; border-radius: 2px; }
+  .cover .desc { max-width: 480px; font-size: 11pt; color: var(--gray); line-height: 1.6; margin-bottom: 24px; }
+  .cover .date { font-size: 10pt; color: #9ca3af; font-style: italic; }
+
+  /* ── Rollen-Tabelle auf Deckblatt ──────────────────────────── */
+  .cover-table { margin-top: 32px; border-collapse: collapse; font-size: 10pt; text-align: left; }
+  .cover-table th { background: var(--blue); color: #fff; padding: 8px 16px; }
+  .cover-table td { padding: 7px 16px; border: 1px solid var(--gray-mid); }
+  .cover-table tr:nth-child(even) td { background: var(--gray-light); }
+
+  /* ── Inhaltsverzeichnis ─────────────────────────────────────── */
+  .toc-page { page-break-after: always; padding: 40px 60px; }
+  .toc-page h2 { font-size: 18pt; color: var(--blue); margin-bottom: 24px; padding-bottom: 8px; border-bottom: 3px solid var(--blue); }
+  .toc-list { list-style: none; }
+  .toc-list li { margin: 5px 0; }
+  .toc-list a { color: var(--text); text-decoration: none; display: flex; align-items: baseline; gap: 6px; }
+  .toc-list a:hover { color: var(--blue); }
+  .toc-num { color: var(--blue); font-weight: bold; min-width: 28px; }
+  .toc-sub { padding-left: 30px; }
+  .toc-sub .toc-num { color: var(--gray); font-size: 9pt; }
+
+  /* ── Layout ─────────────────────────────────────────────────── */
+  .content { max-width: 800px; margin: 0 auto; padding: 40px 60px; }
+
+  /* ── Überschriften ──────────────────────────────────────────── */
+  h1.section {
+    font-size: 20pt; color: var(--blue); font-weight: 900;
+    margin: 48px 0 16px; padding-bottom: 10px;
+    border-bottom: 4px solid var(--blue);
+    page-break-before: always;
+  }
+  h1.section:first-of-type { page-break-before: avoid; }
+  h2 { font-size: 14pt; color: var(--blue); font-weight: bold; margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--gray-mid); }
+  h3 { font-size: 11pt; color: var(--gray); font-weight: bold; margin: 18px 0 7px; }
+
+  /* ── Absatz / Liste ─────────────────────────────────────────── */
+  p { margin: 7px 0 10px; }
+  ul, ol { padding-left: 22px; margin: 7px 0 12px; }
+  li { margin: 3px 0; }
+
+  /* ── Tabellen ───────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 10pt; }
+  th { background: var(--blue); color: #fff; padding: 9px 12px; text-align: left; font-weight: bold; }
+  td { padding: 7px 12px; border: 1px solid var(--gray-mid); }
+  tr:nth-child(even) td { background: var(--gray-light); }
+
+  /* ── Boxen ──────────────────────────────────────────────────── */
+  .box { border-radius: 8px; padding: 13px 16px; margin: 14px 0; border-left: 5px solid; }
+  .box-title { font-weight: bold; margin-bottom: 5px; font-size: 10pt; }
+  .box p { margin: 3px 0; font-size: 10pt; }
+  .box-blue  { background: var(--blue-light);  border-color: var(--blue);  color: #1e3a8a; }
+  .box-green { background: var(--green-light); border-color: var(--green); color: #14532d; }
+  .box-amber { background: var(--amber-light); border-color: var(--amber); color: #78350f; }
+  .box-red   { background: var(--red-light);   border-color: var(--red);   color: #7f1d1d; }
+
+  /* ── Schritt-Boxen ──────────────────────────────────────────── */
+  .steps { margin: 14px 0; }
+  .step { display: flex; gap: 12px; margin-bottom: 9px; align-items: flex-start; }
+  .step-num {
+    background: var(--blue); color: #fff; font-weight: 900; font-size: 11pt;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-body { background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: 6px; padding: 9px 13px; flex: 1; }
+  .step-body strong { display: block; margin-bottom: 3px; color: var(--blue); }
+  .step-body p, .step-body li { font-size: 10pt; margin: 2px 0; }
+
+  /* ── Drucken ────────────────────────────────────────────────── */
+  @media print {
+    .cover { page-break-after: always; min-height: auto; padding: 80px 60px; }
+    .toc-page { page-break-after: always; }
+    h1.section { page-break-before: always; }
+
+    @page {
+      size: A4;
+      margin: 20mm 20mm 22mm 20mm;
+      @top-center {
+        content: "Laptop-Austausch · Benutzeranleitung für Administratoren";
+        font-family: Arial, sans-serif; font-size: 8pt; color: #6b7280;
+      }
+      @bottom-right {
+        content: "Seite " counter(page) " von " counter(pages);
+        font-family: Arial, sans-serif; font-size: 8pt; color: #6b7280;
+      }
+      @bottom-left {
+        content: "Kreis Groß-Gerau · IT-Center · Juni 2026";
+        font-family: Arial, sans-serif; font-size: 8pt; color: #6b7280;
+      }
+    }
+
+    .no-print { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    .step { break-inside: avoid; }
+    .box  { break-inside: avoid; }
+    table { break-inside: avoid; }
+  }
+
+  .print-btn {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--blue); color: #fff; border: none; border-radius: 8px;
+    padding: 12px 22px; font-size: 11pt; font-weight: bold; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(30,64,175,0.35); z-index: 999;
+  }
+  .print-btn:hover { background: #1d4ed8; }
+</style>
+</head>
+<body>
+
+<!-- ── Deckblatt ──────────────────────────────────────────── -->
+<div class="cover">
+  <span class="cover-badge">Kreis Groß-Gerau · IT-Center</span>
+  <br>
+  <span class="cover-badge-admin">Nur für Administratoren</span>
+  <h1>Laptop-Austausch</h1>
+  <p class="subtitle">Benutzeranleitung für Administratoren</p>
+  <p class="org">Admin-Panel · /admin</p>
+  <div class="cover-divider"></div>
+  <p class="desc">Diese Anleitung beschreibt alle Verwaltungsfunktionen des Admin-Panels: Kalender, Buchungsverwaltung, Import, Warteschlange, Software-Katalog, Einstellungen und Datensicherung.</p>
+
+  <table class="cover-table">
+    <tr><th>Rolle</th><th>Berechtigungen</th></tr>
+    <tr><td><strong>Admin</strong></td><td>Vollzugriff – lesen, schreiben, löschen</td></tr>
+    <tr><td><strong>Viewer</strong></td><td>Nur lesen – keine Bearbeitungen</td></tr>
+  </table>
+
+  <p class="date" style="margin-top:32px;">Stand: Juni 2026</p>
+</div>
+
+<!-- ── Inhaltsverzeichnis ─────────────────────────────────── -->
+<div class="toc-page">
+  <h2>Inhaltsverzeichnis</h2>
+  <ul class="toc-list">
+    <li><a href="#anmeldung"><span class="toc-num">1</span> Admin-Anmeldung</a></li>
+    <li><a href="#kalender"><span class="toc-num">2</span> Kalender (Startseite)</a></li>
+    <li class="toc-sub"><a href="#kal-nav"><span class="toc-num">2.1</span> Navigation &amp; Übersicht</a></li>
+    <li class="toc-sub"><a href="#kal-buchung"><span class="toc-num">2.2</span> Buchung anlegen</a></li>
+    <li class="toc-sub"><a href="#kal-slots"><span class="toc-num">2.3</span> Slots generieren</a></li>
+    <li class="toc-sub"><a href="#kal-verschieben"><span class="toc-num">2.4</span> Verschieben-Modus</a></li>
+    <li><a href="#buchungen"><span class="toc-num">3</span> Buchungen verwalten</a></li>
+    <li class="toc-sub"><a href="#buch-filter"><span class="toc-num">3.1</span> Filtern &amp; Exportieren</a></li>
+    <li class="toc-sub"><a href="#buch-detail"><span class="toc-num">3.2</span> Buchung im Detail</a></li>
+    <li class="toc-sub"><a href="#buch-bulk"><span class="toc-num">3.3</span> Bulk-Löschen</a></li>
+    <li><a href="#warteschlange"><span class="toc-num">4</span> Warteschlange</a></li>
+    <li><a href="#mitarbeitende"><span class="toc-num">5</span> Mitarbeitende verwalten</a></li>
+    <li class="toc-sub"><a href="#ma-import"><span class="toc-num">5.1</span> CSV-Import</a></li>
+    <li class="toc-sub"><a href="#ma-bulk"><span class="toc-num">5.2</span> Bulk-Löschen</a></li>
+    <li><a href="#erinnerungen"><span class="toc-num">6</span> Erinnerungen</a></li>
+    <li><a href="#software"><span class="toc-num">7</span> Software-Katalog</a></li>
+    <li class="toc-sub"><a href="#sw-freigabe"><span class="toc-num">7.1</span> Freigeben &amp; Ablehnen</a></li>
+    <li class="toc-sub"><a href="#sw-merge"><span class="toc-num">7.2</span> Zusammenführen (Merge)</a></li>
+    <li><a href="#einstellungen"><span class="toc-num">8</span> Einstellungen</a></li>
+    <li><a href="#backup"><span class="toc-num">9</span> Datensicherung</a></li>
+    <li><a href="#dokumente"><span class="toc-num">10</span> Dokumente &amp; Anleitungen</a></li>
+    <li><a href="#adminuser"><span class="toc-num">11</span> Admin-Benutzer verwalten</a></li>
+    <li><a href="#anhang"><span class="toc-num">12</span> Anhang: Status-Übersicht</a></li>
+  </ul>
+</div>
+
+<!-- ── Inhalt ─────────────────────────────────────────────── -->
+<div class="content">
+
+  <!-- 1. Anmeldung -->
+  <h1 class="section" id="anmeldung">1 &nbsp;Admin-Anmeldung</h1>
+  <p>Das Admin-Panel ist unter <strong>/admin</strong> erreichbar. Melden Sie sich mit Ihrer <strong>E-Mail-Adresse</strong> und Ihrem <strong>Passwort</strong> an. Die Admin-Zugangsdaten sind unabhängig von der Mitarbeitenden-Anmeldung.</p>
+  <p>Je nach Rolle stehen unterschiedliche Funktionen zur Verfügung:</p>
+  <table>
+    <tr><th>Rolle</th><th>Berechtigungen</th></tr>
+    <tr><td><strong>Admin</strong></td><td>Vollzugriff: Erstellen, Bearbeiten, Löschen aller Daten</td></tr>
+    <tr><td><strong>Viewer</strong></td><td>Nur Lesezugriff – keine Änderungen möglich</td></tr>
+  </table>
+  <div class="box box-blue">
+    <div class="box-title">ℹ Aktionen, die nur Admins sehen</div>
+    <p>Schaltflächen wie „Löschen", „Freigeben", „Slots generieren" oder „Einstellungen" sind für Viewer nicht sichtbar oder deaktiviert.</p>
+  </div>
+
+  <!-- 2. Kalender -->
+  <h1 class="section" id="kalender">2 &nbsp;Kalender (Startseite)</h1>
+  <p>Der Kalender ist die Startseite des Admin-Panels. Er zeigt alle Zeitfenster der ausgewählten Woche in einem Wochenraster an.</p>
+
+  <h2 id="kal-nav">2.1 &nbsp;Navigation &amp; Übersicht</h2>
+  <table>
+    <tr><th>Farbe</th><th>Bedeutung</th></tr>
+    <tr><td>🟢 Grün</td><td>Freies Zeitfenster</td></tr>
+    <tr><td>🔵 Blau / belegt</td><td>Zeitfenster ist gebucht – Name der Person sichtbar</td></tr>
+    <tr><td>⚫ Grau</td><td>Gesperrtes Zeitfenster</td></tr>
+    <tr><td>🟡 Gelb-Orange</td><td>Verschieben-Modus aktiv – wählbares Ziel-Zeitfenster</td></tr>
+  </table>
+  <p>Nutzen Sie die <strong>KW-Schaltflächen</strong> oben, um zwischen Kalenderwochen zu wechseln.</p>
+
+  <h2 id="kal-buchung">2.2 &nbsp;Buchung anlegen (Admin-only)</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Freies Zeitfenster anklicken</strong>
+        <p>Klicken Sie auf ein grünes Feld im Kalender.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Mitarbeitende/n auswählen</strong>
+        <p>Im Dialog die Person aus der Liste wählen.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>„Buchung anlegen" klicken</strong>
+        <p>Die Buchung wird sofort erstellt und im Kalender angezeigt.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="kal-slots">2.3 &nbsp;Slots generieren (Admin-only)</h2>
+  <p>Klicken Sie oben auf <strong>„Slots generieren"</strong>, um neue Zeitfenster zu erzeugen:</p>
+  <ul>
+    <li>Werktage (Mo–Fr), 08:00–15:00 Uhr, 8 Slots pro Tag</li>
+    <li>Zeitraum (Von / Bis) und ggf. Feiertage eintragen</li>
+    <li>Idempotent – bereits vorhandene Slots werden nicht doppelt angelegt</li>
+  </ul>
+
+  <h2 id="kal-verschieben">2.4 &nbsp;Verschieben-Modus</h2>
+  <p>Wenn in der Buchungsdetailansicht auf <strong>„Termin verschieben"</strong> geklickt wird, wechselt der Kalender in den Verschieben-Modus:</p>
+  <ul>
+    <li>Ein <strong>blauer Banner</strong> oben nennt Namen und aktuellen Termin der Person.</li>
+    <li>Freie Slots erscheinen in <strong>Gelb-Orange</strong> mit dem Hinweis „hierher →".</li>
+    <li>Klicken Sie auf das gewünschte Zeitfenster und <strong>bestätigen</strong> Sie.</li>
+    <li>Zum Abbrechen: Klicken Sie auf <strong>„Abbrechen"</strong> im Banner.</li>
+  </ul>
+  <div class="box box-red">
+    <div class="box-title">⚠ Alle Buchungen &amp; Mitarbeitenden löschen (Admin-only)</div>
+    <p>Diese Funktion (Header-Schaltfläche im Kalender) setzt alle Buchungen und Mitarbeitenden zurück.</p>
+    <p>Zeitfenster und Software-Katalog bleiben erhalten. Nur für den <strong>Start eines neuen Austauschrunds</strong> gedacht.</p>
+    <p><strong>Nicht rückgängig zu machen!</strong> Erstellen Sie vorher ein Backup.</p>
+  </div>
+
+  <!-- 3. Buchungen -->
+  <h1 class="section" id="buchungen">3 &nbsp;Buchungen verwalten</h1>
+  <p>Unter <strong>„Buchungen"</strong> im Menü sehen Sie alle Buchungen in einer durchsuchbaren, filterbaren Tabelle.</p>
+
+  <h2 id="buch-filter">3.1 &nbsp;Filtern &amp; Exportieren</h2>
+  <ul>
+    <li>Suchfeld und Filter-Schaltflächen (Status, Datum etc.) grenzen die Ansicht ein.</li>
+    <li><strong>„Export"</strong> oben rechts: lädt die <em>aktuelle gefilterte Ansicht</em> als Excel-Datei (<code>.xlsx</code>) herunter.</li>
+    <li><strong>„Imaging-Blatt (Tag)"</strong>: druckt alle Imaging-Blätter eines gewählten Tages als PDF.</li>
+  </ul>
+
+  <h2 id="buch-detail">3.2 &nbsp;Buchung im Detail</h2>
+  <p>Klicken Sie auf eine Buchung, um alle Informationen und Aktionen zu sehen:</p>
+  <table>
+    <tr><th>Aktion</th><th>Beschreibung</th></tr>
+    <tr><td>Als nicht erschienen markieren</td><td>Setzt Status auf „Nicht erschienen"; optionaler Grund</td></tr>
+    <tr><td>Als krank markieren</td><td>Setzt Status auf „Krank gemeldet"; optionaler Grund</td></tr>
+    <tr><td>Zurück auf bestätigt</td><td>Stellt einen Sonderstatus auf „bestätigt" zurück</td></tr>
+    <tr><td>Termin verschieben</td><td>Öffnet den Kalender im Verschieben-Modus</td></tr>
+    <tr><td>Stornieren</td><td>Storniert die Buchung (nicht rückgängig)</td></tr>
+    <tr><td>Imaging-Blatt drucken</td><td>PDF-Checkliste für den Techniker</td></tr>
+  </table>
+  <p>In der Software-Liste der Detailansicht kann einzelne Software über das <strong>Stift-Icon</strong> entfernt werden.</p>
+
+  <h2 id="buch-bulk">3.3 &nbsp;Bulk-Löschen</h2>
+  <p>Wählen Sie in der Buchungsliste mehrere Buchungen per <strong>Checkbox</strong> aus und klicken Sie auf <strong>„Löschen"</strong> in der Aktionsleiste. Die zugehörigen Zeitfenster werden automatisch wieder freigegeben.</p>
+
+  <!-- 4. Warteschlange -->
+  <h1 class="section" id="warteschlange">4 &nbsp;Warteschlange</h1>
+  <p>Der Menüpunkt <strong>„Warteschlange"</strong> (mit orangefarbenem Zähler-Badge) zeigt alle bestätigten Buchungen, die noch nicht vom IT-Center abgearbeitet wurden.</p>
+
+  <h2>Tabs</h2>
+  <table>
+    <tr><th>Tab</th><th>Inhalt</th></tr>
+    <tr><td><strong>Offen</strong></td><td>Buchungen, die noch abgearbeitet werden müssen</td></tr>
+    <tr><td><strong>Bereit</strong></td><td>Vom IT-Center als erledigt markierte Buchungen</td></tr>
+  </table>
+
+  <h2>Aktionen (Admin-only)</h2>
+  <ul>
+    <li><strong>Bestätigen</strong> – Markiert die Buchung als abgearbeitet (→ Tab „Bereit").</li>
+    <li><strong>Zurück in Warteschlange</strong> – Stellt eine erledigte Buchung zurück in „Offen".</li>
+    <li><strong>Ansehen</strong> – Öffnet die Buchungsdetail-Seite.</li>
+  </ul>
+
+  <!-- 5. Mitarbeitende -->
+  <h1 class="section" id="mitarbeitende">5 &nbsp;Mitarbeitende verwalten</h1>
+  <p>Unter <strong>„Mitarbeitende"</strong> sehen Sie alle importierten Personen. Einzelpersonen können angesehen und (admin-only) gelöscht werden.</p>
+
+  <h2 id="ma-import">5.1 &nbsp;CSV-Import</h2>
+  <p>Klicken Sie auf <strong>„Mitarbeitende importieren"</strong> (oben rechts in der Liste) und wählen Sie Ihre CSV-Datei.</p>
+
+  <p>Die CSV-Datei muss folgende Spaltenköpfe enthalten (Reihenfolge beliebig):</p>
+  <table>
+    <tr><th>CSV-Spalte</th><th>Datenbankfeld</th><th>Beispielwert</th></tr>
+    <tr><td><code>PC-Nummer</code></td><td>pc_nummer</td><td>PC7438</td></tr>
+    <tr><td><code>Login</code></td><td>kvgg_nummer</td><td>kvgg1234</td></tr>
+    <tr><td><code>Vorname</code></td><td>vorname</td><td>Max</td></tr>
+    <tr><td><code>Nachname</code></td><td>nachname</td><td>Mustermann</td></tr>
+    <tr><td><code>eMail-Adresse</code></td><td>email</td><td>m.mustermann@kreisgg.de</td></tr>
+    <tr><td><code>Fachabteilung</code></td><td>abteilung</td><td>Personalamt</td></tr>
+  </table>
+  <p>Trennzeichen (Semikolon, Komma, Tabulator) und Zeichensatz (Windows-1252 / UTF-8) werden <strong>automatisch erkannt</strong>.</p>
+
+  <div class="box box-blue">
+    <div class="box-title">ℹ Upsert-Logik</div>
+    <p>Bereits vorhandene Mitarbeitende (gleiche KVGG-Nummer) werden <strong>aktualisiert</strong>, nicht doppelt angelegt.</p>
+    <p>Neue Mitarbeitende werden hinzugefügt. Fehler werden pro Zeile gemeldet.</p>
+  </div>
+
+  <h2 id="ma-bulk">5.2 &nbsp;Bulk-Löschen</h2>
+  <p>Wählen Sie Mitarbeitende per Checkbox aus und klicken Sie auf <strong>„Löschen"</strong>. Zugehörige Buchungen und deren Zeitfenster werden automatisch bereinigt.</p>
+
+  <!-- 6. Erinnerungen -->
+  <h1 class="section" id="erinnerungen">6 &nbsp;Erinnerungen</h1>
+  <p>Der Menüpunkt <strong>„Erinnerungen"</strong> listet alle Mitarbeitenden <strong>ohne aktiven Termin</strong> auf. Pro Person erscheint eine Schaltfläche <strong>„Erinnern"</strong>.</p>
+  <p>Diese Schaltfläche öffnet Ihr E-Mail-Programm mit einer vorgefertigten deutschen Erinnerungsmail (Empfänger und Text sind vorausgefüllt). Die Nachricht geht aus <strong>Ihrem eigenen Postfach</strong> ab.</p>
+  <div class="box box-amber">
+    <div class="box-title">ℹ Das System sendet keine E-Mails</div>
+    <p>Der Server hat keinen E-Mail-Zugang. Die „Erinnern"-Funktion öffnet nur Ihr lokales E-Mail-Programm.</p>
+    <p>Personen ohne hinterlegte E-Mail-Adresse erhalten keine „Erinnern"-Schaltfläche.</p>
+  </div>
+
+  <!-- 7. Software-Katalog -->
+  <h1 class="section" id="software">7 &nbsp;Software-Katalog</h1>
+  <p>Der Katalog enthält alle Programme, die Mitarbeitende bei der Buchung auswählen können. Admins können Einträge anlegen, bearbeiten, freigeben, zusammenführen und löschen.</p>
+
+  <h2>Status-Tabs</h2>
+  <table>
+    <tr><th>Tab</th><th>Inhalt</th></tr>
+    <tr><td><strong>Alle</strong></td><td>Alle Katalogeinträge</td></tr>
+    <tr><td><strong>Wartet auf Freigabe</strong></td><td>Von Mitarbeitenden eingetragene, noch ungeprüfte Einträge (Zahl im Menü-Badge)</td></tr>
+    <tr><td><strong>Freigegeben</strong></td><td>Für alle Mitarbeitenden sichtbare Einträge</td></tr>
+  </table>
+
+  <h2 id="sw-freigabe">7.1 &nbsp;Eintrag freigeben oder ablehnen</h2>
+  <p>Klicken Sie in der Zeile des ausstehenden Eintrags auf das <strong>Mehr-Menü (⋮)</strong>:</p>
+  <ul>
+    <li><strong>Freigeben</strong> – Eintrag wird für alle Mitarbeitenden sichtbar.</li>
+    <li><strong>Löschen</strong> – Eintrag wird abgelehnt und entfernt.</li>
+  </ul>
+
+  <h2 id="sw-merge">7.2 &nbsp;Einträge zusammenführen (Merge)</h2>
+  <p>Doppelte oder ähnliche Einträge (z.&nbsp;B. „Excel" und „excel") können zusammengeführt werden:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Ziel-Eintrag öffnen (Gewinner)</strong>
+        <p>Öffnen Sie den Eintrag, der nach dem Merge erhalten bleiben soll.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>„Zusammenführen" wählen (⋮-Menü)</strong>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Verlierer auswählen und bestätigen</strong>
+        <p>Alle Buchungen werden auf den Gewinner umgestellt. Der Verlierer-Eintrag wird gelöscht.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Verwendung einsehen</h2>
+  <p>Klicken Sie auf einen Katalog-Eintrag und öffnen Sie den Tab <strong>„Verwendet von"</strong>, um zu sehen, welche Mitarbeitenden diese Software angefordert haben.</p>
+
+  <h2>Bulk-Löschen</h2>
+  <p>Wählen Sie Einträge per Checkbox aus und klicken Sie auf <strong>„Löschen"</strong>. Referenzen in Buchungen werden automatisch bereinigt (<code>nullOnDelete</code>).</p>
+
+  <!-- 8. Einstellungen -->
+  <h1 class="section" id="einstellungen">8 &nbsp;Einstellungen</h1>
+  <p>Unter <strong>„Einstellungen"</strong> (admin-only) können Sie drei Bereiche konfigurieren. Jeder Bereich hat eine eigene <strong>„Bearbeiten"</strong>-Schaltfläche direkt neben der Vorschau.</p>
+
+  <h2>8.1 &nbsp;Ort</h2>
+  <p>Der Veranstaltungsort (Gebäude + Raum, z.&nbsp;B. „Gebäude B, Raum 345") wird angezeigt auf:</p>
+  <ul>
+    <li>Der Buchungsbestätigung für Mitarbeitende</li>
+    <li>Dem Mitarbeitenden-Dashboard</li>
+    <li>Im iCal-Termin (<code>LOCATION</code>-Feld)</li>
+  </ul>
+
+  <h2>8.2 &nbsp;Texte des Software-Formulars</h2>
+  <table>
+    <tr><th>Textblock</th><th>Inhalt</th></tr>
+    <tr><td>Grüner Kasten (Standard-Software)</td><td>Überschrift + Beschreibung + Programmliste</td></tr>
+    <tr><td>Blauer Kasten (Softwarecenter)</td><td>Überschrift + Beschreibung + Programmliste</td></tr>
+    <tr><td>„Ihre Arbeitsumgebung" (Einleitung)</td><td>Überschrift + Beschreibungstext</td></tr>
+  </table>
+  <p><strong>Format:</strong> Die erste Zeile jedes Textfelds wird als <strong>Fettschrift-Überschrift</strong> gerendert, alle weiteren als normaler Text. Programmlisten: ein Programm pro Zeile. Leer lassen = Standardwert wird angezeigt.</p>
+
+  <h2>8.3 &nbsp;Footer-Text</h2>
+  <p>Text nach dem automatischen Copyright-Jahr im Seitenfuß jeder Mitarbeitenden-Seite (z.&nbsp;B. Kontaktdaten des IT-Centers).</p>
+
+  <!-- 9. Datensicherung -->
+  <h1 class="section" id="backup">9 &nbsp;Datensicherung</h1>
+  <p>Unter <strong>„Datensicherung"</strong> (admin-only) können Sie SQL-Dumps der Datenbank erstellen, herunterladen und einspielen.</p>
+
+  <h2>Backup erstellen</h2>
+  <p>Klicken Sie auf <strong>„Backup erstellen"</strong>. Das System legt <code>backup_JJJJ-MM-TT_HH-MM-SS.sql</code> auf dem Server ab und zeigt die Datei in der Liste an.</p>
+
+  <h2>Backup herunterladen</h2>
+  <p>Klicken Sie in der Tabelle auf <strong>„Herunterladen"</strong> neben dem gewünschten Backup.</p>
+
+  <h2>Backup einspielen (Restore)</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>„Backup einspielen" klicken</strong>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>.sql-Datei auswählen</strong>
+        <p>Wählen Sie eine zuvor heruntergeladene Backup-Datei von Ihrem Computer.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Warnung bestätigen</strong>
+        <p>Die aktuelle Datenbank wird vollständig überschrieben.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-amber">
+    <div class="box-title">ℹ Automatische Backups</div>
+    <p>Bei jedem Einspielen von Datenbank-Updates (Migrationen) wird automatisch ein Backup angelegt.</p>
+    <p>Backups enthalten personenbezogene Daten (Mitarbeitende) und müssen sicher aufbewahrt werden.</p>
+  </div>
+
+  <!-- 10. Dokumente -->
+  <h1 class="section" id="dokumente">10 &nbsp;Dokumente &amp; Anleitungen</h1>
+  <p>Unter <strong>„Dokumente"</strong> können Admins Dateien hochladen, die Mitarbeitenden auf ihrem Dashboard zum Download bereitstehen.</p>
+
+  <h2>Datei hochladen</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body"><strong>„Datei hochladen" klicken</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Datei auswählen</strong>
+        <p>Wählen Sie die Datei von Ihrem Computer (z.&nbsp;B. eine PDF-Anleitung).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Bestätigen</strong>
+        <p>Die Datei erscheint sofort für alle Mitarbeitenden auf ihrem Dashboard.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Datei löschen</h2>
+  <p>Klicken Sie in der Tabelle auf <strong>„Löschen"</strong> neben der entsprechenden Datei. Die Datei wird vom Server entfernt und erscheint nicht mehr im Mitarbeitenden-Dashboard.</p>
+
+  <!-- 11. Admin-Benutzer -->
+  <h1 class="section" id="adminuser">11 &nbsp;Admin-Benutzer verwalten</h1>
+  <p>Unter <strong>„Admin-Benutzer"</strong> (admin-only) verwalten Sie die Konten für das Admin-Panel.</p>
+
+  <h2>Benutzer anlegen</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body"><strong>„Benutzer anlegen" klicken</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Daten eingeben</strong>
+        <p>Name, E-Mail-Adresse, Passwort und Rolle (Admin / Viewer) eintragen.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body"><strong>Speichern</strong></div>
+    </div>
+  </div>
+
+  <h2>Benutzer bearbeiten</h2>
+  <p>Klicken Sie auf einen Benutzer und dann auf <strong>„Bearbeiten"</strong>. Das Passwort-Feld leer lassen, wenn das Passwort nicht geändert werden soll.</p>
+
+  <table>
+    <tr><th>Rolle</th><th>Beschreibung</th></tr>
+    <tr><td><strong>Admin</strong></td><td>Vollzugriff auf alle Funktionen des Admin-Panels</td></tr>
+    <tr><td><strong>Viewer</strong></td><td>Nur Lesezugriff – keine Änderungen möglich</td></tr>
+  </table>
+
+  <!-- 12. Anhang -->
+  <h1 class="section" id="anhang">12 &nbsp;Anhang: Status-Übersicht</h1>
+
+  <h2>Buchungs-Status</h2>
+  <table>
+    <tr><th>Status</th><th>Bedeutung</th></tr>
+    <tr><td><strong>Bestätigt</strong></td><td>Aktiver Termin – im Mitarbeitenden-Dashboard sichtbar</td></tr>
+    <tr><td><strong>Storniert</strong></td><td>Termin abgesagt; Zeitfenster wieder frei</td></tr>
+    <tr><td><strong>Abgeschlossen</strong></td><td>Austausch hat stattgefunden</td></tr>
+    <tr><td><strong>Nicht erschienen</strong></td><td>Mitarbeitende/r ist nicht erschienen</td></tr>
+    <tr><td><strong>Krank gemeldet</strong></td><td>Mitarbeitende/r hat sich krank gemeldet</td></tr>
+  </table>
+
+  <h2>Warteschlangen-Status</h2>
+  <table>
+    <tr><th>Status</th><th>Spalte „reviewed_at"</th><th>Anzeige</th></tr>
+    <tr><td><strong>Offen</strong></td><td>NULL (leer)</td><td>Tab „Offen" in der Warteschlange</td></tr>
+    <tr><td><strong>Bereit</strong></td><td>Zeitstempel gesetzt</td><td>Tab „Bereit" in der Warteschlange</td></tr>
+  </table>
+
+</div><!-- /content -->
+
+<button class="print-btn no-print" onclick="window.print()">🖨 Als PDF speichern</button>
+
+</body>
+</html>

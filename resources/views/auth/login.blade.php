@@ -30,14 +30,14 @@
                     <label for="kvgg_nummer" class="block text-sm font-medium text-slate-700">KVGG-Nummer</label>
                     <input id="kvgg_nummer" name="kvgg_nummer" type="text" required autofocus
                         value="{{ old('kvgg_nummer') }}"
-                        placeholder="z. B. KVGG-12345"
+                        placeholder="z. B. KVGG12345"
                         class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                 </div>
 
                 <div>
                     <label for="pc_nummer" class="block text-sm font-medium text-slate-700">PC-Nummer</label>
                     <input id="pc_nummer" name="pc_nummer" type="password" required
-                        placeholder="z. B. PC-123456"
+                        placeholder="z. B. PC123456"
                         class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     <p class="mt-1 text-xs text-slate-400">Die PC-Nummer finden Sie auf dem Aufkleber Ihres Geräts.</p>
                 </div>
