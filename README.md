@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>A self-service booking system that let ~150 public-sector employees schedule their own laptop replacement.</strong><br>
-  Built with Laravel 13 and Filament 4 — and <strong>in production use</strong> at the IT department of Kreis Groß-Gerau, Germany.
+  Built with Laravel 13 and Filament 4. The project is <strong>finished</strong> and <strong>runs in daily production use</strong> at the IT department of Kreis Groß-Gerau, Germany.
 </p>
 
 <p align="center">
@@ -16,7 +16,8 @@
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-38BDF8?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
   <img src="https://img.shields.io/badge/MariaDB-003545?logo=mariadb&logoColor=white" alt="MariaDB">
   <img src="https://img.shields.io/badge/tests-188%20passing-3FB950" alt="188 tests passing">
-  <img src="https://img.shields.io/badge/status-in%20production-0969DA" alt="In production">
+  <img src="https://img.shields.io/badge/status-completed-3FB950" alt="Completed">
+  <img src="https://img.shields.io/badge/deployed-live%20at%20Kreis%20Gro%C3%9F--Gerau-0969DA" alt="Deployed and in daily use">
 </p>
 
 ---
