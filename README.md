@@ -28,6 +28,25 @@
 
 ---
 
+## My role · Meine Rolle
+
+**Sole developer — from requirements to the server that runs it today.** 76 commits between June and September 2026, no other contributors.
+
+| | |
+|---|---|
+| **Requirements** | Turned the department's needs into a workable scope — including pushing back where the original specification did not survive contact with reality: it asked for hardware details employees cannot possibly know, and for a framework combination that cannot run together. |
+| **Architecture** | Stack selection, data model, the service layer, the two-guard authentication split, and the decision to keep exports outside Filament's routing. |
+| **Implementation** | The complete employee-facing application and the full Filament admin panel. |
+| **Quality** | 188 feature tests covering the double-booking guards, the CSV importer, PDF and Excel exports, backup and restore, and role-based access for both roles. |
+| **Deployment** | Wrote the bundle, install and update scripts, and carried out the first installation on the district's Debian server. |
+| **Handover** | German user guides for employees and for administrators, plus a developer handbook for whoever maintains the code next. |
+
+Built **AI-assisted** (Claude Code). The architecture, the design decisions documented below, the code review and the production deployment are my own.
+
+> **DE** — Alleinentwickler: Anforderungsklärung, Architektur, Umsetzung, Tests, Deployment und Dokumentation, Juni bis September 2026. Die Umsetzung erfolgte KI-gestützt; Architektur- und Review-Entscheidungen liegen bei mir.
+
+---
+
 ## Screenshots
 
 <table>
